@@ -187,7 +187,7 @@ export default function DashboardPage() {
 
       {/* Subtle overlay for contrast */}
       <div className="fixed inset-0 bg-black/50 z-0 mix-blend-overlay pointer-events-none" />
-      <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80 z-0 pointer-events-none" />
+      <div className="fixed inset-0 bg-linear-to-b from-black/20 via-transparent to-black/80 z-0 pointer-events-none" />
 
       {/* ── Header ── */}
       <header className="relative z-50 w-full pt-8 pb-4">
@@ -195,14 +195,14 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
               <div className="flex items-center gap-2">
-                <Gamepad2 size={24} className="text-[#00d2ff]" />
+                <Gamepad2 size={24} className="text-ps-accent-end" />
                 <h1 className="text-xl font-black text-white tracking-widest drop-shadow-md uppercase">GameHub</h1>
               </div>
                 <Link
                   href="/providers"
                   className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
                 >
-                  <Database size={14} className="text-[#0099ff]" />
+                  <Database size={14} className="text-ps-accent-blue-light" />
                   Manage Providers
                 </Link>
             </div>
@@ -212,7 +212,7 @@ export default function DashboardPage() {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="flex items-center hover:scale-105 active:scale-95 transition-transform duration-300"
               >
-                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#00d2ff] to-[#0044ff] shadow-[0_0_20px_rgba(0,112,209,0.3)] flex items-center justify-center text-sm font-bold text-white">
+                <div className="size-10 rounded-full bg-linear-to-tr from-ps-accent-end to-ps-accent-start shadow-[0_0_20px_rgba(0,112,209,0.3)] flex items-center justify-center text-sm font-bold text-white">
                   {userName.charAt(0).toUpperCase()}
                 </div>
               </button>
@@ -272,9 +272,9 @@ export default function DashboardPage() {
                 <button
                   key={p.id}
                   onClick={() => setActiveFilter(p.id)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/20 hover:text-white/40 hover:bg-white/5"}`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/20 hover:text-white/40 hover:bg-white/5"}`}
                 >
-                  <p.icon size={14} className={activeFilter === p.id ? (p.activeColor || "text-[#00d2ff]") : "transition-colors group-hover:text-white/40"} />
+                  <p.icon size={14} className={activeFilter === p.id ? (p.activeColor || "text-ps-accent-end") : "transition-colors group-hover:text-white/40"} />
                   {p.label}
                 </button>
               ))}
@@ -282,11 +282,11 @@ export default function DashboardPage() {
           </div>
 
           <div className="relative group w-full md:w-96">
-            <div className="absolute inset-0 bg-gradient-to-r from-[#0044ff]/20 to-[#00d2ff]/20 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full overflow-hidden shadow-2xl transition-all duration-300 group-focus-within:border-[#00d2ff]/50 group-focus-within:bg-black/60">
+            <div className="absolute inset-0 bg-linear-to-r from-ps-accent-start/20 to-ps-accent-end/20 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full overflow-hidden shadow-2xl transition-all duration-300 group-focus-within:border-ps-accent-end/50 group-focus-within:bg-black/60">
               <Search
                 size={20}
-                className="ml-5 text-white/40 group-focus-within:text-[#00d2ff] transition-colors"
+                className="ml-5 text-white/40 group-focus-within:text-ps-accent-end transition-colors"
               />
               <input
                 type="text"
@@ -333,8 +333,8 @@ export default function DashboardPage() {
         {!loading && filteredAccounts.length === 0 && (
           <div className="relative min-h-[400px] flex flex-col items-center justify-center rounded-[2.5rem] border border-white/5 bg-zinc-900/10 backdrop-blur-sm p-12 text-center group">
             <div className="relative mb-8">
-              <div className="absolute inset-0 bg-[#00d2ff] blur-[60px] opacity-5" />
-              <div className="w-24 h-24 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+              <div className="absolute inset-0 bg-ps-accent-end blur-[60px] opacity-5" />
+              <div className="size-24 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
                 {activeFilter === "psplus" ? (
                   <Crown size={40} className="text-[#FFD700] opacity-50" />
                 ) : (
@@ -346,7 +346,7 @@ export default function DashboardPage() {
             <h3 className="text-2xl font-black text-white/90 mb-3 tracking-tight uppercase">
               {searchQuery ? "No Matches" : "Account Hub Empty"}
             </h3>
-            <p className="text-white/30 max-w-xs mx-auto text-xs font-bold uppercase tracking-[0.2em] leading-relaxed mb-10">
+            <p className="text-white/30 max-w-xs mx-auto text-xs/relaxed font-bold uppercase tracking-[0.2em] mb-10">
               {searchQuery
                 ? `No records found for "${searchQuery}"`
                 : "Start adding accounts to your collection."}
@@ -361,7 +361,7 @@ export default function DashboardPage() {
     </main>
 
       {/* ── Fixed FAB with Menu ── */}
-      <div className="fixed bottom-8 right-8 md:bottom-12 md:right-12 z-[90] flex flex-col items-end gap-4">
+      <div className="fixed bottom-8 right-8 md:bottom-12 md:right-12 z-90 flex flex-col items-end gap-4">
           {isFabMenuOpen && (
             <div
               id="fab-menu"
@@ -374,18 +374,18 @@ export default function DashboardPage() {
                 }}
                 className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all duration-300 group"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#00d2ff]/20 shadow-lg border border-white/10 transition-all">
-                  <Gamepad2 size={20} className="text-[#0099ff] group-hover:text-[#00d2ff]" />
+                <div className="size-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-ps-accent-end/20 shadow-lg border border-white/10 transition-all">
+                  <Gamepad2 size={20} className="text-ps-accent-blue-light group-hover:text-ps-accent-end" />
                 </div>
                 <span>New Account</span>
               </button>
               
               <Link
                 href="/providers"
-                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-[#0066ff] transition-all duration-300 group shadow-lg"
+                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-ps-accent-blue transition-all duration-300 group shadow-lg"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-black/20 shadow-lg border border-white/10 group-hover:border-black/10">
-                  <Database size={20} className="text-[#0099ff] group-hover:text-white transition-colors" />
+                <div className="size-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-black/20 shadow-lg border border-white/10 group-hover:border-black/10">
+                  <Database size={20} className="text-ps-accent-blue-light group-hover:text-white transition-colors" />
                 </div>
                 <span>Manage Providers</span>
               </Link>
@@ -395,11 +395,11 @@ export default function DashboardPage() {
           <button
             id="fab-button"
             onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
-            className={`group relative w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-[0_20px_50px_rgba(0,102,255,0.4)] hover:scale-110 active:scale-95 ${isFabMenuOpen ? "rotate-[135deg]" : ""}`}
+            className={`group relative size-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-[0_20px_50px_rgba(0,102,255,0.4)] hover:scale-110 active:scale-95 ${isFabMenuOpen ? "rotate-135" : ""}`}
             title="Access Vault Control"
           >
-            <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] animate-pulse opacity-40 blur-xl" />
-            <div className="absolute -inset-[1px] rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] z-0 opacity-90 shadow-[0_0_30px_rgba(0,102,255,0.5)]" />
+            <div className="absolute inset-0 rounded-[1.5rem] bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light animate-pulse opacity-40 blur-xl" />
+            <div className="absolute -inset-px rounded-[1.5rem] bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light z-0 opacity-90 shadow-[0_0_30px_rgba(0,102,255,0.5)]" />
             <div className="absolute inset-[2.5px] rounded-[1.35rem] bg-[#050505] z-10" />
             <Plus size={24} className={`relative z-20 text-white transition-transform duration-500 ${isFabMenuOpen ? "rotate-45" : ""}`} />
           </button>

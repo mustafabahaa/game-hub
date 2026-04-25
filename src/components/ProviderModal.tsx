@@ -129,48 +129,92 @@ export default function ProviderModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+    <div className="
+      animate-fadeIn fixed inset-0 z-100 flex items-center justify-center p-4
+      sm:p-6
+    ">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
 
-      <div className="relative w-full max-w-2xl bg-black/40 border border-white/10 rounded-[2.5rem] shadow-[0_0_100px_rgba(0,102,255,0.2)] overflow-hidden flex flex-col max-h-[90vh] backdrop-blur-3xl">
+      <div className="
+        relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden
+        rounded-[2.5rem] border border-white/10 bg-black/40
+        shadow-[0_0_100px_rgba(0,102,255,0.2)] backdrop-blur-3xl
+      ">
         
-        <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+        <div className="pointer-events-none absolute inset-0 z-0 opacity-30">
           <Aurora colorStops={["#0066ff", "#0044ff", "#1a0b2e"]} blend={0.6} amplitude={0.5} />
         </div>
 
-        <header className="relative z-10 px-8 py-6 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-md">
+        <header className="
+          relative z-10 flex items-center justify-between border-b
+          border-white/10 bg-white/5 px-8 py-6 backdrop-blur-md
+        ">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0044ff] to-[#0099ff] flex items-center justify-center shadow-[0_10px_30px_rgba(0,102,255,0.3)] border border-white/20 ring-1 ring-white/10 ring-inset">
+            <div className="
+              flex size-12 items-center justify-center rounded-2xl border
+              border-white/20 bg-linear-to-br from-ps-accent-start
+              to-ps-accent-blue-light shadow-[0_10px_30px_rgba(0,102,255,0.3)]
+              ring-1 ring-white/10 ring-inset
+            ">
               <Users size={24} className="text-white drop-shadow-md" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight">
+              <h2 className="text-2xl font-black tracking-tight text-white">
                 {initialEditProvider ? "Edit Provider" : "New Provider"}
               </h2>
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.2em] font-bold">Registry Entry</p>
+              <p className="
+                text-[10px] font-bold tracking-[0.2em] text-white/40 uppercase
+              ">Registry Entry</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+          <button onClick={onClose} className="
+            flex size-10 items-center justify-center rounded-full border
+            border-white/10 bg-white/5 text-white/40 transition-all
+            hover:bg-white/10 hover:text-white
+          ">
             <X size={20} />
           </button>
         </header>
 
-        <div className="relative z-10 flex-1 overflow-y-auto p-8 lg:p-10 custom-scrollbar">
+        <div className="
+          custom-scrollbar relative z-10 flex-1 overflow-y-auto p-8
+          lg:p-10
+        ">
           {toast && (
-            <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-bold text-sm flex items-center gap-3 animate-fadeInUp shadow-2xl border ${toast.type === "success" ? "bg-[#0066ff] border-white/20 text-white" : "bg-red-500 border-white/20 text-white"}`}>
+            <div className={`
+              fixed top-10 right-10 z-110 flex animate-fadeInUp items-center
+              gap-3 rounded-2xl border px-6 py-4 text-sm font-bold shadow-2xl
+              ${toast.type === "success" ? `
+                border-white/20 bg-ps-accent-blue text-white
+              ` : `border-white/20 bg-red-500 text-white`}
+            `}>
               {toast.type === "success" ? <CircleCheckBig size={20} /> : <CircleAlert size={20} />}
               {toast.message}
             </div>
           )}
 
           <form onSubmit={handleProviderSubmit} className="space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-10">
+            <div className="
+              grid grid-cols-1 gap-10
+              md:grid-cols-12
+            ">
               {/* Photo Upload */}
-              <div className="md:col-span-4 space-y-4">
-                <label className="block text-xs font-black text-white/40 uppercase tracking-widest ml-1">Provider Photo</label>
+              <div className="
+                space-y-4
+                md:col-span-4
+              ">
+                <label className="
+                  ml-1 block text-xs font-black tracking-widest text-white/40
+                  uppercase
+                ">Provider Photo</label>
                 <div 
                   onClick={() => fileRef.current?.click()}
-                  className="aspect-square rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 hover:border-[#0099ff]/50 transition-all cursor-pointer group overflow-hidden relative"
+                  className="
+                    group relative aspect-square cursor-pointer overflow-hidden
+                    rounded-[2rem] border-2 border-dashed border-white/10
+                    bg-white/5 transition-all
+                    hover:border-ps-accent-blue-light/50
+                  "
                 >
                   {preview ? (
                     <Image 
@@ -178,32 +222,57 @@ export default function ProviderModal({
                       alt="Preview" 
                       fill
                       unoptimized
-                      className="object-cover group-hover:scale-110 transition-transform duration-700" 
+                      className="
+                        object-cover transition-transform duration-700
+                        group-hover:scale-110
+                      " 
                     />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                      <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/10 group-hover:text-[#0099ff]/50 transition-colors">
+                    <div className="
+                      absolute inset-0 flex flex-col items-center justify-center
+                      gap-4
+                    ">
+                      <div className="
+                        flex size-12 items-center justify-center rounded-full
+                        bg-white/5 text-white/10 transition-colors
+                        group-hover:text-ps-accent-blue-light/50
+                      ">
                         <ImageIcon size={24} />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/20 text-center px-4">Upload Image</span>
+                      <span className="
+                        px-4 text-center text-[10px] font-black tracking-widest
+                        text-white/20 uppercase
+                      ">Upload Image</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <div className="
+                    absolute inset-0 flex items-center justify-center
+                    bg-black/60 opacity-0 transition-opacity
+                    group-hover:opacity-100
+                  ">
                     <Upload size={24} className="text-white" />
                   </div>
                 </div>
-                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
+                <input ref={fileRef} type="file" accept="image/*" className="
+                  hidden
+                " onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
               </div>
 
               {/* Basic Info */}
-              <div className="md:col-span-8 space-y-8">
+              <div className="
+                space-y-8
+                md:col-span-8
+              ">
                 <InputField 
                   label="Provider Name" 
                   value={providerForm.name} 
                   onChange={(v) => setProviderForm({ ...providerForm, name: v })} 
                   placeholder="e.g. PlayStation Store" 
                 />
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="
+                  grid grid-cols-1 gap-6
+                  sm:grid-cols-2
+                ">
                   <InputField 
                     label="Website" 
                     value={providerForm.website} 
@@ -233,22 +302,46 @@ export default function ProviderModal({
             </div>
 
             <div className="space-y-4">
-              <label className="block text-xs font-black text-white/40 uppercase tracking-widest mb-2 ml-1">Internal Notes</label>
+              <label className="
+                mb-2 ml-1 block text-xs font-black tracking-widest text-white/40
+                uppercase
+              ">Internal Notes</label>
               <textarea
                 value={providerForm.notes}
                 onChange={(e) => setProviderForm({ ...providerForm, notes: e.target.value })}
                 placeholder="Private reference details..."
-                className="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-[#0099ff]/40 focus:bg-white/5 focus:ring-1 focus:ring-[#0099ff]/20 transition-all min-h-[100px] resize-none backdrop-blur-md placeholder:text-white/10"
+                className="
+                  min-h-[100px] w-full resize-none rounded-2xl border
+                  border-white/5 bg-black/20 px-5 py-4 text-sm text-white
+                  backdrop-blur-md transition-all outline-none
+                  placeholder:text-white/10
+                  focus:border-ps-accent-blue-light/40 focus:bg-white/5
+                  focus:ring-1 focus:ring-ps-accent-blue-light/20
+                "
               />
             </div>
             
             <button
               type="submit"
               disabled={submitting}
-              className="group relative w-full py-5 rounded-2xl bg-gradient-to-r from-[#0044ff] to-[#0099ff] text-white font-black text-xs uppercase tracking-[0.3em] overflow-hidden shadow-[0_15px_40px_rgba(0,102,255,0.4)] border border-white/10 hover:scale-[1.01] active:scale-[0.99] transition-all"
+              className="
+                group relative w-full overflow-hidden rounded-2xl border
+                border-white/10 bg-linear-to-r from-ps-accent-start
+                to-ps-accent-blue-light py-5 text-xs font-black tracking-[0.3em]
+                text-white uppercase shadow-[0_15px_40px_rgba(0,102,255,0.4)]
+                transition-all
+                hover:scale-[1.01]
+                active:scale-[0.99]
+              "
             >
-              <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
-              <span className="relative z-10 flex items-center justify-center gap-3">
+              <div className="
+                absolute inset-0 -translate-x-full bg-linear-to-r
+                from-transparent via-white/30 to-transparent
+                group-hover:animate-[shimmer_1.5s_infinite]
+              " />
+              <span className="
+                relative z-10 flex items-center justify-center gap-3
+              ">
                 {submitting ? <Loader2 size={18} className="animate-spin" /> : initialEditProvider ? <Save size={18} /> : <Plus size={18} />}
                 {initialEditProvider ? "Save Changes" : "Add Provider"}
               </span>
@@ -263,13 +356,21 @@ export default function ProviderModal({
 function InputField({ label, value, onChange, placeholder, type = "text" }: { label: string; value: string; onChange: (v: string) => void; placeholder: string; type?: string }) {
   return (
     <div className="space-y-3">
-      <label className="block text-xs font-black text-white/40 uppercase tracking-widest ml-1">{label}</label>
+      <label className="
+        ml-1 block text-xs font-black tracking-widest text-white/40 uppercase
+      ">{label}</label>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-[#0099ff]/40 focus:bg-white/5 focus:ring-1 focus:ring-[#0099ff]/20 transition-all placeholder:text-white/10 backdrop-blur-md"
+        className="
+          w-full rounded-2xl border border-white/5 bg-black/20 px-5 py-4 text-sm
+          text-white backdrop-blur-md transition-all outline-none
+          placeholder:text-white/10
+          focus:border-ps-accent-blue-light/40 focus:bg-white/5 focus:ring-1
+          focus:ring-ps-accent-blue-light/20
+        "
       />
     </div>
   );

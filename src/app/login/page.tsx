@@ -44,7 +44,7 @@ export default function LoginPage() {
       
       {/* Subtle overlay for contrast */}
       <div className="absolute inset-0 bg-black/40 z-0 mix-blend-overlay pointer-events-none" />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/30 z-0 pointer-events-none" />
+      <div className="absolute inset-0 bg-linear-to-t from-black/80 via-transparent to-black/30 z-0 pointer-events-none" />
 
       {/* Glassmorphic Container */}
       <div className="w-full max-w-4xl flex flex-col md:flex-row rounded-[2rem] overflow-hidden bg-black/20 backdrop-blur-2xl relative z-10 animate-fadeInUp shadow-[0_0_80px_rgba(0,112,209,0.3)] border border-white/10">
@@ -59,7 +59,7 @@ export default function LoginPage() {
           <div className="absolute inset-0 bg-black/30 z-0 mix-blend-overlay" />
 
           <div className="relative z-10 flex items-center gap-2 mb-4 md:mb-0">
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shadow-lg border border-white/30 shrink-0">
+            <div className="size-10 bg-white/20 backdrop-blur-md rounded-xl flex items-center justify-center shadow-lg border border-white/30 shrink-0">
               <Gamepad2 size={20} className="text-white" />
             </div>
             <span className="text-lg font-extrabold tracking-wide drop-shadow-md">GAMEHUB</span>
@@ -68,12 +68,12 @@ export default function LoginPage() {
           <div className="relative z-10 mt-2 md:mt-10 mb-auto">
             <SplitText
               text="All your games. One ultimate vault."
-              className="text-2xl sm:text-3xl lg:text-4xl font-extrabold leading-tight mb-2 md:mb-4 drop-shadow-lg inline-block text-white"
+              className="text-2xl/tight sm:text-3xl lg:text-4xl font-extrabold mb-2 md:mb-4 drop-shadow-lg inline-block text-white"
               delay={40}
               from={{ opacity: 0, transform: 'translate3d(0, 30px, 0)' }}
               to={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
             />
-            <p className="text-white/80 text-xs sm:text-sm max-w-[280px] leading-relaxed drop-shadow animate-fadeInUp" style={{ animationDelay: "1s" }}>
+            <p className="text-white/80 text-xs/relaxed sm:text-sm max-w-[280px] drop-shadow-sm animate-fadeInUp" style={{ animationDelay: "1s" }}>
               Store your credentials for PlayStation, Xbox, Steam, and PC in one secure place. Never lose track of your purchases across a gazillion providers again.
             </p>
           </div>
@@ -86,7 +86,7 @@ export default function LoginPage() {
             <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-md">Login to GameHub</h2>
             <p className="text-sm text-white/70 mb-6 flex items-center gap-1.5">
               Don&apos;t have an account?
-              <Link href="/register" className="text-[#00d2ff] font-semibold hover:text-white transition-colors">
+              <Link href="/register" className="text-ps-accent-end font-semibold hover:text-white transition-colors">
                 Register
               </Link>
             </p>
@@ -108,7 +108,7 @@ export default function LoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all duration-300 outline-none placeholder:text-white/30 focus:border-[#00d2ff]/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(0,210,255,0.2)] bg-black/40 border border-white/10 text-white backdrop-blur-md"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all duration-300 outline-none placeholder:text-white/30 focus:border-ps-accent-end/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(0,210,255,0.2)] bg-black/40 border border-white/10 text-white backdrop-blur-md"
                   placeholder="player@gamehub.com"
                 />
               </div>
@@ -122,7 +122,7 @@ export default function LoginPage() {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl text-sm transition-all duration-300 outline-none placeholder:text-white/30 tracking-widest focus:border-[#00d2ff]/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(0,210,255,0.2)] bg-black/40 border border-white/10 text-white backdrop-blur-md"
+                  className="w-full px-4 py-3 rounded-xl text-sm transition-all duration-300 outline-none placeholder:text-white/30 tracking-widest focus:border-ps-accent-end/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(0,210,255,0.2)] bg-black/40 border border-white/10 text-white backdrop-blur-md"
                   placeholder="••••••••"
                 />
               </div>
@@ -130,9 +130,9 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full flex items-center justify-center py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group relative overflow-hidden mt-8 bg-gradient-to-r from-[#0044ff] to-[#00d2ff] text-white shadow-[0_10px_30px_rgba(0,112,209,0.5)] border border-white/20"
+                className="w-full flex items-center justify-center py-3.5 rounded-xl text-sm font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:hover:scale-100 disabled:cursor-not-allowed group relative overflow-hidden mt-8 bg-linear-to-r from-ps-accent-start to-ps-accent-end text-white shadow-[0_10px_30px_rgba(0,112,209,0.5)] border border-white/20"
               >
-                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-linear-to-r from-transparent via-white/40 to-transparent pointer-events-none" />
                 <span className="relative z-10 flex items-center gap-2 drop-shadow-md">
                   {loading ? <Loader2 size={20} className="animate-spin" /> : "Enter Vault"}
                 </span>

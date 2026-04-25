@@ -204,7 +204,7 @@ const Aurora = memo(function Aurora(props: AuroraProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return <div ref={ctnDom} className="w-full h-full" />;
+  return <div ref={ctnDom} className="size-full" />;
 })
 
 export default Aurora;

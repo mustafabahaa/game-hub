@@ -104,46 +104,89 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 lg:p-8">
+    <div className="
+      fixed inset-0 z-100 flex items-center justify-center p-4
+      sm:p-6
+      lg:p-8
+    ">
       <div 
-        className="absolute inset-0 bg-black/80 backdrop-blur-3xl animate-fadeIn" 
+        className="
+          animate-fadeIn absolute inset-0 bg-black/80 backdrop-blur-3xl
+        " 
         onClick={onClose} 
       />
       
-      <div className="relative w-full max-w-5xl bg-[#0a0a0f] rounded-[3rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh] animate-scaleIn">
+      <div className="
+        animate-scaleIn relative flex max-h-[90vh] w-full max-w-5xl flex-col
+        overflow-hidden rounded-[3rem] border border-white/10 bg-[#0a0a0f]
+        shadow-[0_50px_100px_rgba(0,0,0,0.8)]
+      ">
         {/* Toast Notification */}
         {toast && (
-          <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${toast.type === "success" ? "bg-gradient-to-r from-[#00d2ff] to-[#0044ff] border-white/20 text-white" : "bg-gradient-to-r from-red-600 to-red-800 border-white/20 text-white"}`}>
-            {toast.type === "success" ? <CircleCheckBig size={16} className="drop-shadow-md" /> : <CircleAlert size={16} className="drop-shadow-md" />}
+          <div className={`
+            fixed top-10 right-10 z-110 flex animate-fadeInUp items-center gap-3
+            rounded-2xl border px-6 py-4 text-[10px] font-black tracking-[0.2em]
+            uppercase shadow-[0_20px_50px_rgba(0,0,0,0.5)]
+            ${toast.type === "success" ? `
+              border-white/20 bg-linear-to-r from-ps-accent-end
+              to-ps-accent-start text-white
+            ` : `
+              border-white/20 bg-linear-to-r from-red-600 to-red-800 text-white
+            `}
+          `}>
+            {toast.type === "success" ? <CircleCheckBig size={16} className="
+              drop-shadow-md
+            " /> : <CircleAlert size={16} className="drop-shadow-md" />}
             {toast.message}
           </div>
         )}
 
-        <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+        <div className="pointer-events-none absolute inset-0 z-0 opacity-10">
           <Aurora colorStops={["#00d2ff", "#0044ff", "#1a0b2e"]} blend={0.6} amplitude={0.8} />
         </div>
 
-        <header className="relative z-10 px-8 py-6 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-xl">
+        <header className="
+          relative z-10 flex items-center justify-between border-b
+          border-white/10 bg-white/5 px-8 py-6 backdrop-blur-xl
+        ">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0044ff] to-[#0099ff] flex items-center justify-center shadow-lg border border-white/10">
+            <div className="
+              flex size-12 items-center justify-center rounded-2xl border
+              border-white/10 bg-linear-to-br from-ps-accent-start
+              to-ps-accent-blue-light shadow-lg
+            ">
               <PlatformIcon size={24} className="text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-black text-white tracking-tight uppercase">{account.accountName}</h2>
-              <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] font-bold">Games Repository</p>
+              <h2 className="
+                text-2xl font-black tracking-tight text-white uppercase
+              ">{account.accountName}</h2>
+              <p className="
+                text-[10px] font-bold tracking-[0.3em] text-white/40 uppercase
+              ">Games Repository</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:bg-white/10 hover:text-white transition-all">
+          <button onClick={onClose} className="
+            flex size-10 items-center justify-center rounded-full bg-white/5
+            text-white/40 transition-all
+            hover:bg-white/10 hover:text-white
+          ">
             <X size={20} />
           </button>
         </header>
 
-        <main className="relative z-10 flex-1 overflow-y-auto p-8 custom-scrollbar">
+        <main className="
+          custom-scrollbar relative z-10 flex-1 overflow-y-auto p-8
+        ">
           {isAddingGame ? (
-            <div className="max-w-xl mx-auto animate-fadeIn">
+            <div className="animate-fadeIn mx-auto max-w-xl">
               <button 
                 onClick={() => setIsAddingGame(false)}
-                className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white/40 hover:text-white mb-8 transition-colors"
+                className="
+                  mb-8 flex items-center gap-2 text-[10px] font-black
+                  tracking-widest text-white/40 uppercase transition-colors
+                  hover:text-white
+                "
               >
                 <ChevronLeft size={16} /> Back to Games
               </button>
@@ -151,36 +194,72 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
               <form onSubmit={handleAddGame} className="space-y-8">
                 <div 
                   onClick={() => fileRef.current?.click()}
-                  className="aspect-video rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 hover:border-[#00d2ff]/50 transition-all cursor-pointer group overflow-hidden relative shadow-2xl"
+                  className="
+                    group relative aspect-video cursor-pointer overflow-hidden
+                    rounded-[2rem] border-2 border-dashed border-white/10
+                    bg-white/5 shadow-2xl transition-all
+                    hover:border-ps-accent-end/50
+                  "
                 >
                   {preview ? (
-                    <Image src={preview} alt="Preview" fill className="object-cover group-hover:scale-105 transition-transform duration-700" unoptimized />
+                    <Image src={preview} alt="Preview" fill className="
+                      object-cover transition-transform duration-700
+                      group-hover:scale-105
+                    " unoptimized />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                      <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/10 group-hover:text-[#00d2ff]/50 transition-colors">
+                    <div className="
+                      absolute inset-0 flex flex-col items-center justify-center
+                      gap-4
+                    ">
+                      <div className="
+                        flex size-16 items-center justify-center rounded-full
+                        bg-white/5 text-white/10 transition-colors
+                        group-hover:text-ps-accent-end/50
+                      ">
                         <ImageIcon size={32} />
                       </div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/20 text-center">Upload Game Cover</span>
+                      <span className="
+                        text-center text-[10px] font-black tracking-widest
+                        text-white/20 uppercase
+                      ">Upload Game Cover</span>
                     </div>
                   )}
-                  <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
+                  <input ref={fileRef} type="file" accept="image/*" className="
+                    hidden
+                  " onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
                 </div>
 
                 <div className="space-y-4">
-                  <label className="block text-xs font-black text-white/40 uppercase tracking-widest ml-1">Game Title</label>
+                  <label className="
+                    ml-1 block text-xs font-black tracking-widest text-white/40
+                    uppercase
+                  ">Game Title</label>
                   <input
                     required
                     value={gameForm.title}
                     onChange={(e) => setGameForm(f => ({ ...f, title: e.target.value }))}
                     placeholder="e.g. God of War Ragnarök"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl px-6 py-5 text-white outline-none focus:border-[#00d2ff]/50 focus:bg-white/10 transition-all text-lg font-bold"
+                    className="
+                      w-full rounded-2xl border border-white/10 bg-white/5 px-6
+                      py-5 text-lg font-bold text-white transition-all
+                      outline-none
+                      focus:border-ps-accent-end/50 focus:bg-white/10
+                    "
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full py-5 rounded-[2rem] bg-gradient-to-r from-[#0044ff] to-[#00d2ff] text-white font-black text-xs uppercase tracking-[0.4em] shadow-[0_20px_50px_rgba(0,102,255,0.4)] hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 flex items-center justify-center gap-3"
+                  className="
+                    flex w-full items-center justify-center gap-3 rounded-[2rem]
+                    bg-linear-to-r from-ps-accent-start to-ps-accent-end py-5
+                    text-xs font-black tracking-[0.4em] text-white uppercase
+                    shadow-[0_20px_50px_rgba(0,102,255,0.4)] transition-all
+                    hover:scale-[1.01]
+                    active:scale-[0.99]
+                    disabled:opacity-50
+                  "
                 >
                   {submitting ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
                   Add Game to Account
@@ -190,26 +269,55 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
           ) : (
             <div className="space-y-8">
               <div className="flex items-center justify-between">
-                <h3 className="text-xs font-black text-white/40 uppercase tracking-[0.4em]">Collection ({account.games?.length || 0})</h3>
+                <h3 className="
+                  text-xs font-black tracking-[0.4em] text-white/40 uppercase
+                ">Collection ({account.games?.length || 0})</h3>
                 <button
                   onClick={() => setIsAddingGame(true)}
-                  className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#00d2ff]/10 text-[#00d2ff] text-[10px] font-black uppercase tracking-widest border border-[#00d2ff]/20 hover:bg-[#00d2ff] hover:text-white transition-all shadow-lg"
+                  className="
+                    flex items-center gap-2 rounded-full border
+                    border-ps-accent-end/20 bg-ps-accent-end/10 px-6 py-3
+                    text-[10px] font-black tracking-widest text-ps-accent-end
+                    uppercase shadow-lg transition-all
+                    hover:bg-ps-accent-end hover:text-white
+                  "
                 >
                   <Plus size={16} /> Add Game
                 </button>
               </div>
 
               {account.games && account.games.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
+                <div className="
+                  grid grid-cols-2 gap-6
+                  sm:grid-cols-3
+                  md:grid-cols-4
+                ">
                   {account.games.map((game) => (
-                    <div key={game.id} className="group relative aspect-[3/4] rounded-2xl overflow-hidden border border-white/5 bg-white/5 shadow-2xl">
-                      <Image src={game.imageUrl} alt={game.title} fill className="object-cover group-hover:scale-110 transition-transform duration-700" unoptimized />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-80" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <h4 className="text-xs font-black text-white uppercase tracking-tight line-clamp-2 mb-2">{game.title}</h4>
+                    <div key={game.id} className="
+                      group relative aspect-3/4 overflow-hidden rounded-2xl
+                      border border-white/5 bg-white/5 shadow-2xl
+                    ">
+                      <Image src={game.imageUrl} alt={game.title} fill className="
+                        object-cover transition-transform duration-700
+                        group-hover:scale-110
+                      " unoptimized />
+                      <div className="
+                        absolute inset-0 bg-linear-to-t from-black via-black/20
+                        to-transparent opacity-80
+                      " />
+                      <div className="absolute inset-x-0 bottom-0 p-4">
+                        <h4 className="
+                          mb-2 line-clamp-2 text-xs font-black tracking-tight
+                          text-white uppercase
+                        ">{game.title}</h4>
                         <button 
                           onClick={() => handleDeleteGame(game.id)}
-                          className="p-2 rounded-lg bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-500 hover:text-white"
+                          className="
+                            rounded-lg bg-red-500/10 p-2 text-red-500 opacity-0
+                            transition-opacity
+                            group-hover:opacity-100
+                            hover:bg-red-500 hover:text-white
+                          "
                         >
                           <Trash2 size={14} />
                         </button>
@@ -218,13 +326,24 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
                   ))}
                 </div>
               ) : (
-                <div className="py-20 flex flex-col items-center justify-center gap-6 border-2 border-dashed border-white/5 rounded-[3rem] bg-white/[0.02]">
-                  <div className="w-20 h-20 rounded-full bg-white/5 flex items-center justify-center text-white/10">
+                <div className="
+                  flex flex-col items-center justify-center gap-6 rounded-[3rem]
+                  border-2 border-dashed border-white/5 bg-white/2 py-20
+                ">
+                  <div className="
+                    flex size-20 items-center justify-center rounded-full
+                    bg-white/5 text-white/10
+                  ">
                     <Gamepad2 size={40} />
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-black text-white/40 uppercase tracking-widest mb-1">No Games Found</p>
-                    <p className="text-[10px] text-white/20 uppercase tracking-[0.2em]">Start by adding the first game to this vault</p>
+                    <p className="
+                      mb-1 text-lg font-black tracking-widest text-white/40
+                      uppercase
+                    ">No Games Found</p>
+                    <p className="
+                      text-[10px] tracking-[0.2em] text-white/20 uppercase
+                    ">Start by adding the first game to this vault</p>
                   </div>
                 </div>
               )}

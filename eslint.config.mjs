@@ -1,11 +1,19 @@
 import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
+import betterTailwindcss from "eslint-plugin-better-tailwindcss";
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
+    extends: [betterTailwindcss.configs.recommended],
+    settings: {
+      "better-tailwindcss": {
+        entryPoint: "src/app/globals.css",
+        detectComponentClasses: true,
+      },
+    },
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -19,6 +27,12 @@ const eslintConfig = defineConfig([
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
       "react-hooks/set-state-in-effect": "off",
+      "better-tailwindcss/enforce-canonical-classes": "warn",
+      "better-tailwindcss/no-unknown-classes": ["warn", {
+        ignore: ["^animate-fadeIn$", "^animate-scaleIn$", "^custom-scrollbar$", "^split-parent$", "^dark$", "^font-outfit$"]
+      }],
+      "better-tailwindcss/enforce-consistent-class-order": "off",
+      "better-tailwindcss/enforce-consistent-line-wrapping": "off",
     },
   },
   // Override default ignores of eslint-config-next.
@@ -27,6 +41,7 @@ const eslintConfig = defineConfig([
     ".next/**",
     "out/**",
     "build/**",
+    "tailwind.config.js",
     "next-env.d.ts",
   ]),
 ]);

@@ -54,7 +54,12 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
       onMouseMove={handleMouseMove}
       onMouseEnter={() => setOpacity(1)}
       onMouseLeave={() => setOpacity(0)}
-      className={`card-glow ${account.isPsPlus ? "card-glow-plus" : ""} rounded-3xl overflow-hidden animate-fadeInUp flex flex-col relative group/card`}
+      className={`
+        card-glow
+        ${account.isPsPlus ? "card-glow-plus" : ""}
+        group/card relative flex animate-fadeInUp flex-col overflow-hidden
+        rounded-3xl
+      `}
       style={{
         animationDelay: `${index * 0.07}s`,
         opacity: 0,
@@ -67,7 +72,10 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
     >
       {/* Interactive Spotlight */}
       <div
-        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-300 z-50"
+        className="
+          pointer-events-none absolute -inset-px z-50 rounded-3xl opacity-0
+          transition-opacity duration-300
+        "
         style={{
           opacity,
           background: account.isPsPlus 
@@ -79,45 +87,72 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
       />
       {/* Game Image Collage */}
       <div 
-        className="relative aspect-[3/4] overflow-hidden group bg-zinc-900/50 cursor-pointer"
+        className="
+          group relative aspect-3/4 cursor-pointer overflow-hidden
+          bg-zinc-900/50
+        "
         onClick={() => onViewDetails?.(account)}
       >
         {account.games && account.games.length > 0 ? (
-          <div className={`grid h-full ${
+          <div className={`
+            grid h-full
+            ${
             account.games.length === 1 ? 'grid-cols-1' : 
             account.games.length === 2 ? 'grid-cols-2' : 
             'grid-cols-2 grid-rows-2'
-          }`}>
+          }
+          `}>
             {account.games.slice(0, 4).map((game) => (
-              <div key={game.id} className="relative w-full h-full border-[0.5px] border-white/5 overflow-hidden">
+              <div key={game.id} className="
+                relative size-full overflow-hidden border-[0.5px] border-white/5
+              ">
                 <Image
                   src={game.imageUrl}
                   alt={game.title}
                   fill
-                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  className="
+                    object-cover transition-transform duration-700
+                    group-hover:scale-110
+                  "
                   unoptimized
                 />
               </div>
             ))}
             {account.games.length > 4 && (
-              <div className="absolute bottom-2 right-2 px-2 py-1 rounded-md bg-black/80 backdrop-blur-md text-[8px] font-black text-white uppercase tracking-widest border border-white/10 z-20">
+              <div className="
+                absolute right-2 bottom-2 z-20 rounded-md border border-white/10
+                bg-black/80 px-2 py-1 text-[8px] font-black tracking-widest
+                text-white uppercase backdrop-blur-md
+              ">
                 +{account.games.length - 4} More
               </div>
             )}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-white/10 gap-3">
-            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+          <div className="
+            flex h-full flex-col items-center justify-center gap-3 text-white/10
+          ">
+            <div className="
+              flex size-16 items-center justify-center rounded-full bg-white/5
+            ">
               <Gamepad2 size={32} />
             </div>
-            <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Empty Account</span>
+            <span className="
+              text-[10px] font-black tracking-widest uppercase opacity-50
+            ">Empty Account</span>
           </div>
         )}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-80" />
+        <div className="
+          absolute inset-0 bg-linear-to-t from-[#050505] via-transparent
+          to-transparent opacity-80
+        " />
 
         {account.isPsPlus && (
           <div
-            className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg"
+            className="
+              absolute top-4 left-4 flex items-center gap-1.5 rounded-full px-3
+              py-1.5 text-xs font-bold shadow-lg
+            "
             style={{
               background: "linear-gradient(135deg, #FFD700, #FFA500)",
               color: "#1a1a00",
@@ -130,18 +165,31 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
         )}
 
         {account.platform === "PlayStation" && account.accountType && (
-          <div className={`absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${badgeClass}`}>
+          <div className={`
+            absolute top-4 left-4 z-20 rounded-full px-3 py-1.5 text-xs
+            font-bold shadow-lg
+            ${badgeClass}
+          `}>
             {account.accountType}
           </div>
         )}
 
-        <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="
+          absolute top-4 right-4 z-20 flex gap-2 opacity-0 transition-opacity
+          duration-300
+          group-hover:opacity-100
+        ">
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onEdit?.(account);
               }}
-              className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-[#00d2ff]/40 hover:text-[#00d2ff] transition-colors"
+              className="
+                flex size-8 items-center justify-center rounded-full border
+                border-white/20 bg-black/60 text-white backdrop-blur-md
+                transition-colors
+                hover:bg-ps-accent-end/40 hover:text-ps-accent-end
+              "
             >
               <Pencil size={14} />
             </button>
@@ -150,38 +198,63 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                 e.stopPropagation();
                 onDelete?.(account.id);
               }}
-              className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-red-500/40 hover:text-red-400 transition-colors"
+              className="
+                flex size-8 items-center justify-center rounded-full border
+                border-white/20 bg-black/60 text-white backdrop-blur-md
+                transition-colors
+                hover:bg-red-500/40 hover:text-red-400
+              "
             >
               <Trash2 size={14} />
             </button>
           </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-5 transform transition-transform duration-500 group-hover:-translate-y-2">
-          <div className="flex items-center gap-2 mb-1">
+        <div className="
+          absolute inset-x-0 bottom-0 transform p-5 transition-transform
+          duration-500
+          group-hover:-translate-y-2
+        ">
+          <div className="mb-1 flex items-center gap-2">
             <PlatformIcon size={14} className="text-white/40" />
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{account.platform}</span>
+            <span className="
+              text-[10px] font-black tracking-widest text-white/40 uppercase
+            ">{account.platform}</span>
           </div>
-          <h3 className="text-xl font-black text-white leading-tight drop-shadow-2xl">
+          <h3 className="text-xl/tight font-black text-white drop-shadow-2xl">
             {account.accountName}
           </h3>
           {account.games && account.games.length > 0 && (
-            <p className="text-[9px] mt-1 font-bold text-white/30 uppercase tracking-wider line-clamp-1">
+            <p className="
+              mt-1 line-clamp-1 text-[9px] font-bold tracking-wider
+              text-white/30 uppercase
+            ">
               {account.games.length} {account.games.length === 1 ? 'Game' : 'Games'} included
             </p>
           )}
           {provider && (
-            <p className="text-xs mt-1.5 font-semibold tracking-wide uppercase text-white/50">
-              Provider: <span className="text-[#00d2ff]">{provider.name}</span>
+            <p className="
+              mt-1.5 text-xs font-semibold tracking-wide text-white/50 uppercase
+            ">
+              Provider: <span className="text-ps-accent-end">{provider.name}</span>
             </p>
           )}
         </div>
       </div>
 
       {/* Action Area */}
-      <div className="p-5 flex-1 flex flex-col bg-gradient-to-b from-[#050505] to-black/60 relative z-10">
+      <div className="
+        relative z-10 flex flex-1 flex-col bg-linear-to-b from-[#050505]
+        to-black/60 p-5
+      ">
         <button
           onClick={() => setShowCredentials(!showCredentials)}
-          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl text-sm font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
+          className="
+            group relative flex w-full items-center justify-center gap-2
+            overflow-hidden rounded-2xl px-4 py-3.5 text-sm font-bold
+            tracking-wide transition-all duration-300
+            hover:scale-[1.02]
+            active:scale-[0.98]
+          "
           style={{
             background: showCredentials
               ? "rgba(255, 255, 255, 0.05)"
@@ -194,7 +267,11 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
           }}
         >
           {!showCredentials && (
-            <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+            <div className="
+              pointer-events-none absolute inset-0 -translate-x-full
+              bg-linear-to-r from-transparent via-white/30 to-transparent
+              group-hover:animate-[shimmer_1.5s_infinite]
+            " />
           )}
           {showCredentials ? (
             <>
@@ -210,7 +287,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
         </button>
 
         {showCredentials && (
-          <div className="mt-3 space-y-2.5 animate-slideDown">
+          <div className="mt-3 animate-slideDown space-y-2.5">
             <CredentialRow
               label="Email"
               value={account.email}
@@ -229,7 +306,9 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                 isSecret
               />
             ) : (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs" style={{ background: "rgba(255, 215, 0, 0.1)", border: "1px solid rgba(255, 215, 0, 0.3)" }}>
+              <div className="
+                flex items-center gap-2 rounded-lg px-3 py-2 text-xs
+              " style={{ background: "rgba(255, 215, 0, 0.1)", border: "1px solid rgba(255, 215, 0, 0.3)" }}>
                 <Info size={14} style={{ color: "var(--color-ps-plus-gold-light)" }} />
                 <span style={{ color: "var(--color-ps-plus-gold-light)" }}>OTA Sign-in (Contact Provider)</span>
               </div>
@@ -254,7 +333,11 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                     href={provider.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] uppercase font-bold transition-all hover:brightness-125"
+                    className="
+                      flex flex-1 items-center justify-center gap-1.5 rounded-lg
+                      px-2 py-1.5 text-[10px] font-bold uppercase transition-all
+                      hover:brightness-125
+                    "
                     style={{ background: "var(--color-ps-bg-elevated)", color: "var(--color-ps-text-primary)" }}
                   >
                     <ExternalLink size={12} /> Website
@@ -265,7 +348,11 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                     href={`https://wa.me/20${provider.whatsapp.replace(/[^0-9]/g, "").replace(/^20/, "").replace(/^0/, "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] uppercase font-bold transition-all hover:brightness-125"
+                    className="
+                      flex flex-1 items-center justify-center gap-1.5 rounded-lg
+                      px-2 py-1.5 text-[10px] font-bold uppercase transition-all
+                      hover:brightness-125
+                    "
                     style={{ background: "var(--color-ps-bg-elevated)", color: "#25D366" }}
                   >
                     <MessageCircle size={12} /> WhatsApp
@@ -276,7 +363,11 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                     href={provider.facebook}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] uppercase font-bold transition-all hover:brightness-125"
+                    className="
+                      flex flex-1 items-center justify-center gap-1.5 rounded-lg
+                      px-2 py-1.5 text-[10px] font-bold uppercase transition-all
+                      hover:brightness-125
+                    "
                     style={{ background: "var(--color-ps-bg-elevated)", color: "#1877F2" }}
                   >
                     <LinkIcon size={12} /> Facebook
@@ -310,13 +401,15 @@ function CredentialRow({
 
   return (
     <div
-      className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-xs"
+      className="
+        flex items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs
+      "
       style={{ background: "var(--color-ps-bg-elevated)" }}
     >
-      <div className="flex items-center gap-2 min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 items-center gap-2">
         <KeyRound size={14} className="shrink-0" style={{ color: "var(--color-ps-text-muted)" }} />
         <div className="min-w-0 flex-1">
-          <span className="block text-[10px] uppercase tracking-wider" style={{ color: "var(--color-ps-text-muted)" }}>
+          <span className="block text-[10px] tracking-wider uppercase" style={{ color: "var(--color-ps-text-muted)" }}>
             {label}
           </span>
           <span className="block truncate" style={{ color: "var(--color-ps-text-primary)" }}>
@@ -324,11 +417,14 @@ function CredentialRow({
           </span>
         </div>
       </div>
-      <div className="flex items-center gap-1 shrink-0">
+      <div className="flex shrink-0 items-center gap-1">
         {isSecret && (
           <button
             onClick={() => setRevealed(!revealed)}
-            className="p-1.5 rounded-md transition-colors hover:bg-white/5 cursor-pointer"
+            className="
+              cursor-pointer rounded-md p-1.5 transition-colors
+              hover:bg-white/5
+            "
             title={revealed ? "Hide" : "Reveal"}
           >
             <Eye size={14} style={{ color: "var(--color-ps-text-muted)" }} />
@@ -336,7 +432,10 @@ function CredentialRow({
         )}
         <button
           onClick={() => onCopy(value, field)}
-          className="p-1.5 rounded-md transition-colors hover:bg-white/5 cursor-pointer"
+          className="
+            cursor-pointer rounded-md p-1.5 transition-colors
+            hover:bg-white/5
+          "
           title="Copy"
         >
           {copiedField === field ? (

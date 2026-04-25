@@ -120,7 +120,7 @@ export default function AccountModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 sm:p-6 animate-fadeIn">
       <div className="fixed inset-0 bg-black/60 backdrop-blur-md" onClick={onClose} />
 
       <div className="relative w-full max-w-5xl bg-black/40 border border-white/10 rounded-[3rem] shadow-[0_0_120px_rgba(0,112,209,0.25)] overflow-hidden flex flex-col max-h-[90vh] backdrop-blur-3xl">
@@ -132,7 +132,7 @@ export default function AccountModal({
 
         <header className="relative z-10 px-8 py-6 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-xl">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0044ff] to-[#0099ff] flex items-center justify-center shadow-[0_10px_30px_rgba(0,102,255,0.3)] border border-white/20 ring-1 ring-white/10 ring-inset">
+            <div className="flex size-12 items-center justify-center rounded-2xl border border-white/20 bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light shadow-[0_10px_30px_rgba(0,102,255,0.3)] ring-1 ring-inset ring-white/10">
               <Gamepad2 size={24} className="text-white drop-shadow-md" />
             </div>
             <div>
@@ -142,14 +142,14 @@ export default function AccountModal({
               <p className="text-[10px] text-white/40 uppercase tracking-[0.3em] font-bold">Vault Entry</p>
             </div>
           </div>
-          <button onClick={onClose} className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
+          <button onClick={onClose} className="size-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-all">
             <X size={20} />
           </button>
         </header>
 
         <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-10">
           {toast && (
-            <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${toast.type === "success" ? "bg-gradient-to-r from-[#00d2ff] to-[#0044ff] border-white/20 text-white" : "bg-gradient-to-r from-red-600 to-red-800 border-white/20 text-white"}`}>
+            <div className={`fixed top-10 right-10 z-110 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${toast.type === "success" ? "bg-linear-to-r from-ps-accent-end to-ps-accent-start border-white/20 text-white" : "bg-linear-to-r from-red-600 to-red-800 border-white/20 text-white"}`}>
               {toast.type === "success" ? <CircleCheckBig size={16} className="drop-shadow-md" /> : <CircleAlert size={16} className="drop-shadow-md" />}
               {toast.message}
             </div>
@@ -168,7 +168,7 @@ export default function AccountModal({
                   placeholder={form.accountType === "Secondary" ? "Managed by Provider" : "••••••••"} 
                 />
                 {form.accountType === "Secondary" && (
-                  <p className="text-[9px] text-[#0099ff] font-bold uppercase tracking-wider ml-1 animate-pulse">Provider handles login</p>
+                  <p className="text-[9px] text-ps-accent-blue-light font-bold uppercase tracking-wider ml-1 animate-pulse">Provider handles login</p>
                 )}
               </div>
 
@@ -195,7 +195,7 @@ export default function AccountModal({
                       key={p.id}
                       type="button"
                       onClick={() => setForm(f => ({ ...f, platform: p.id as Platform }))}
-                      className={`flex flex-col items-center justify-center gap-2 py-5 px-2 rounded-2xl border transition-all duration-500 ${form.platform === p.id ? "bg-gradient-to-br from-[#0044ff] to-[#0099ff] border-white/30 text-white shadow-lg" : "bg-white/5 border-white/5 text-white/20 hover:border-white/10"}`}
+                      className={`flex flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-5 transition-all duration-500 ${form.platform === p.id ? "border-white/30 bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light text-white shadow-lg" : "border-white/5 bg-white/5 text-white/20 hover:border-white/10"}`}
                     >
                       <p.icon size={22} />
                       <span className="text-[9px] font-black uppercase tracking-tight text-center">{p.id}</span>
@@ -209,13 +209,13 @@ export default function AccountModal({
                   <div className="grid grid-cols-1 gap-6">
                     <div>
                       <label className="block text-xs font-black text-white/40 uppercase tracking-widest mb-4 ml-1">Account Type</label>
-                      <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/5 backdrop-blur-md">
+                      <div className="flex rounded-2xl border border-white/5 bg-white/5 p-1.5 backdrop-blur-md">
                         {["Primary", "Secondary", "Full"].map((t) => (
                           <button
                             key={t}
                             type="button"
                             onClick={() => setForm(f => ({ ...f, accountType: t as AccountType }))}
-                            className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${form.accountType === t ? "bg-white/10 text-white shadow-xl" : "text-white/20 hover:text-white/40"}`}
+                            className={`flex-1 rounded-xl py-3 text-[10px] font-black tracking-widest uppercase transition-all ${form.accountType === t ? "bg-white/10 text-white shadow-xl" : "text-white/20 hover:text-white/40"}`}
                           >
                             {t}
                           </button>
@@ -228,14 +228,14 @@ export default function AccountModal({
                       <button
                         type="button"
                         onClick={() => setForm(f => ({ ...f, isPsPlus: !f.isPsPlus }))}
-                        className={`w-full flex items-center justify-between px-6 py-3 rounded-2xl border transition-all duration-500 ${form.isPsPlus ? "bg-gradient-to-br from-[#FFD700]/20 to-[#FFA500]/20 border-[#FFD700]/30 text-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.15)]" : "bg-white/5 border-white/5 text-white/20 hover:border-white/10"}`}
+                        className={`flex w-full items-center justify-between rounded-2xl border px-6 py-3 transition-all duration-500 ${form.isPsPlus ? "border-[#FFD700]/30 bg-linear-to-br from-[#FFD700]/20 to-[#FFA500]/20 text-[#FFD700] shadow-[0_0_30px_rgba(255,215,0,0.15)]" : "border-white/5 bg-white/5 text-white/20 hover:border-white/10"}`}
                       >
                         <div className="flex items-center gap-3">
                           <Crown size={18} className={form.isPsPlus ? "text-[#FFD700]" : "text-white/10"} />
                           <span className="text-[10px] font-black uppercase tracking-widest">PS Plus Subscription</span>
                         </div>
-                        <div className={`w-10 h-5 rounded-full relative transition-colors duration-500 ${form.isPsPlus ? "bg-[#FFD700]" : "bg-white/10"}`}>
-                          <div className={`absolute top-1 w-3 h-3 rounded-full bg-white transition-all duration-500 ${form.isPsPlus ? "left-6" : "left-1"}`} />
+                        <div className={`relative h-5 w-10 rounded-full transition-colors duration-500 ${form.isPsPlus ? "bg-[#FFD700]" : "bg-white/10"}`}>
+                          <div className={`absolute top-1 size-3 rounded-full bg-white transition-all duration-500 ${form.isPsPlus ? "left-6" : "left-1"}`} />
                         </div>
                       </button>
                     </div>
@@ -248,7 +248,7 @@ export default function AccountModal({
                     <select
                       value={form.providerId}
                       onChange={(e) => setForm(f => ({ ...f, providerId: e.target.value }))}
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-[#00d2ff]/50 focus:bg-white/10 transition-all appearance-none cursor-pointer backdrop-blur-md"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-ps-accent-end/50 focus:bg-white/10 transition-all appearance-none cursor-pointer backdrop-blur-md"
                     >
                       <option value="" className="bg-zinc-950 text-white/50">No Provider</option>
                       {providers.map(p => (
@@ -264,9 +264,9 @@ export default function AccountModal({
               <button
                 type="submit"
                 disabled={submitting}
-                className="group relative px-12 py-5 rounded-[2rem] bg-gradient-to-r from-[#0044ff] to-[#0099ff] text-white font-black text-xs uppercase tracking-[0.4em] overflow-hidden shadow-[0_20px_50px_rgba(0,102,255,0.4)] border border-white/10 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-linear-to-r from-ps-accent-start to-ps-accent-blue-light px-12 py-5 text-xs font-black tracking-[0.4em] text-white uppercase shadow-[0_20px_50px_rgba(0,102,255,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99]"
               >
-                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent" />
+                <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-linear-to-r from-transparent via-white/30 to-transparent" />
                 <span className="relative z-10 flex items-center gap-3">
                   {submitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
                   {editingId ? "Save Changes" : "Create Account"}
@@ -289,7 +289,7 @@ function InputField({ label, value, onChange, placeholder, type = "text" }: { la
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-[#00d2ff]/40 focus:bg-white/5 focus:ring-1 focus:ring-[#00d2ff]/20 transition-all placeholder:text-white/10 backdrop-blur-md"
+        className="w-full bg-black/20 border border-white/5 rounded-2xl px-5 py-4 text-white text-sm outline-none focus:border-ps-accent-end/40 focus:bg-white/5 focus:ring-1 focus:ring-ps-accent-end/20 transition-all placeholder:text-white/10 backdrop-blur-md"
       />
     </div>
   );
