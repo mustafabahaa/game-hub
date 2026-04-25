@@ -249,7 +249,7 @@ export default function ProvidersPage() {
   );
 }
 
-function SocialButton({ href, icon: Icon, label }: { href: string; icon: any; label: string }) {
+function SocialButton({ href, icon: Icon, label }: { href?: string | null; icon: any; label: string }) {
   if (!href) return (
     <div className="flex flex-col items-center gap-2 opacity-10 cursor-not-allowed group/btn">
       <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">

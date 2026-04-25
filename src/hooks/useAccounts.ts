@@ -66,7 +66,6 @@ function mapRow(row: any): Account {
   return {
     id: String(row.id),
     accountName: row.account_name,
-    imageUrl: row.image_url,
     email: row.email,
     password: row.password || undefined,
     otpSecret: row.otp_secret || undefined,
@@ -74,7 +73,11 @@ function mapRow(row: any): Account {
     accountType: row.account_type,
     platform: row.platform || "PlayStation",
     isPsPlus: row.is_ps_plus,
-    includedGames: row.included_games || undefined,
+    games: row.games ? row.games.map((g: any) => ({
+      id: String(g.id),
+      title: g.title,
+      imageUrl: g.image_url,
+    })) : [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   };

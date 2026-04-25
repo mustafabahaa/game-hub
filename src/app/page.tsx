@@ -128,7 +128,7 @@ export default function DashboardPage() {
         (a) =>
           a.accountName.toLowerCase().includes(q) ||
           a.email.toLowerCase().includes(q) ||
-          (a.includedGames && a.includedGames.toLowerCase().includes(q))
+          (a.games && a.games.some(g => g.title.toLowerCase().includes(q)))
       );
     }
     return result;
