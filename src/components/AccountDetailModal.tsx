@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import Image from "next/image";
 import { Account, GameFormData } from "@/types/account";
 import { supabase } from "@/lib/supabase";
+import { useAccountsContext } from "@/context/AccountsContext";
 import Aurora from "@/components/Aurora";
 import { 
   X, 
@@ -14,7 +15,9 @@ import {
   Trash2, 
   Image as ImageIcon, 
   Loader2,
-  ChevronLeft
+  ChevronLeft,
+  CircleCheckBig,
+  CircleAlert
 } from "lucide-react";
 
 interface AccountDetailModalProps {
@@ -24,13 +27,20 @@ interface AccountDetailModalProps {
 }
 
 export default function AccountDetailModal({ isOpen, onClose, account }: AccountDetailModalProps) {
+  const { refetch: refetchAccounts } = useAccountsContext();
   const [isAddingGame, setIsAddingGame] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [gameForm, setGameForm] = useState<GameFormData>({ title: "", imageFile: null, imageUrl: "" });
   const [preview, setPreview] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen || !account) return null;
+
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  };
 
   const PlatformIcon = account.platform === "PlayStation" ? Gamepad2 : account.platform === "Xbox" ? Shield : Monitor;
 
@@ -63,11 +73,18 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
 
       if (dbError) throw dbError;
 
-      setIsAddingGame(false);
-      setGameForm({ title: "", imageFile: null, imageUrl: "" });
-      setPreview(null);
+      // Update local context
+      await refetchAccounts();
+
+      showToast("Game Added to Vault", "success");
+      setTimeout(() => {
+        setIsAddingGame(false);
+        setGameForm({ title: "", imageFile: null, imageUrl: "" });
+        setPreview(null);
+      }, 1000);
     } catch (err) {
       console.error("Error adding game:", err);
+      showToast("Access Denied. System Error.", "error");
     } finally {
       setSubmitting(false);
     }
@@ -78,8 +95,11 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
     try {
       const { error } = await supabase.from("games").delete().eq("id", gameId);
       if (error) throw error;
+      await refetchAccounts();
+      showToast("Game Removed", "success");
     } catch (err) {
       console.error("Error deleting game:", err);
+      showToast("Delete Failed", "error");
     }
   };
 
@@ -91,6 +111,14 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
       />
       
       <div className="relative w-full max-w-5xl bg-[#0a0a0f] rounded-[3rem] border border-white/10 shadow-[0_50px_100px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[90vh] animate-scaleIn">
+        {/* Toast Notification */}
+        {toast && (
+          <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${toast.type === "success" ? "bg-gradient-to-r from-[#00d2ff] to-[#0044ff] border-white/20 text-white" : "bg-gradient-to-r from-red-600 to-red-800 border-white/20 text-white"}`}>
+            {toast.type === "success" ? <CircleCheckBig size={16} className="drop-shadow-md" /> : <CircleAlert size={16} className="drop-shadow-md" />}
+            {toast.message}
+          </div>
+        )}
+
         <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
           <Aurora colorStops={["#00d2ff", "#0044ff", "#1a0b2e"]} blend={0.6} amplitude={0.8} />
         </div>

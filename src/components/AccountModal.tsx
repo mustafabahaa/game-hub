@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useProvidersContext } from "@/context/ProvidersContext";
+import { useAccountsContext } from "@/context/AccountsContext";
 import { Account, AccountFormData, AccountType, Platform } from "@/types/account";
 import { supabase } from "@/lib/supabase";
 import Aurora from "@/components/Aurora";
@@ -40,6 +41,7 @@ export default function AccountModal({
   initialData?: Partial<AccountFormData> | null;
 }) {
   const { providers } = useProvidersContext();
+  const { refetch: refetchAccounts } = useAccountsContext();
   const [form, setForm] = useState<AccountFormData>({ ...EMPTY_ACCOUNT_FORM });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -100,13 +102,17 @@ export default function AccountModal({
         : await supabase.from("accounts").insert([{ ...payload, created_at: new Date().toISOString() }]);
 
       if (error) throw error;
-      showToast(editingId ? "Changes saved" : "Account added to vault", "success");
+      
+      // Update local context to show new item immediately
+      await refetchAccounts();
+      
+      showToast(editingId ? "Vault Entry Updated" : "Account Secured in Vault", "success");
       setTimeout(() => {
         resetForm();
         onClose();
       }, 1000);
     } catch {
-      showToast("System error. Please try again.", "error");
+      showToast("Access Denied. System Error.", "error");
     }
     setSubmitting(false);
   };
@@ -143,8 +149,8 @@ export default function AccountModal({
 
         <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-10">
           {toast && (
-            <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-bold text-sm flex items-center gap-3 animate-fadeInUp shadow-2xl border ${toast.type === "success" ? "bg-[#00d2ff] border-white/20 text-black" : "bg-red-500 border-white/20 text-white"}`}>
-              {toast.type === "success" ? <CircleCheckBig size={20} /> : <CircleAlert size={20} />}
+            <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${toast.type === "success" ? "bg-gradient-to-r from-[#00d2ff] to-[#0044ff] border-white/20 text-white" : "bg-gradient-to-r from-red-600 to-red-800 border-white/20 text-white"}`}>
+              {toast.type === "success" ? <CircleCheckBig size={16} className="drop-shadow-md" /> : <CircleAlert size={16} className="drop-shadow-md" />}
               {toast.message}
             </div>
           )}
