@@ -7,7 +7,6 @@ import { ProvidersProvider } from "@/context/ProvidersContext";
 
 const outfit = Outfit({
   subsets: ["latin"],
-  variable: "--font-outfit",
   display: "swap",
 });
 
@@ -34,8 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("dark", outfit.variable)} data-scroll-behavior="smooth">
-      <body className="font-outfit antialiased bg-[#050505] text-white">
+    <html lang="en" className={cn("dark")} data-scroll-behavior="smooth">
+      <body className={cn(outfit.className, "antialiased bg-[#050505] text-white")}>
         <ProvidersProvider>
           <AccountsProvider>
             {children}

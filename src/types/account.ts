@@ -1,5 +1,6 @@
 export type AccountType = "Primary" | "Secondary" | "Full";
 export type Platform = "PlayStation" | "Xbox" | "PC";
+export type LifecycleType = "lifetime" | "expires_on";
 
 export interface Game {
   id: string;
@@ -19,6 +20,8 @@ export interface Account {
   accountType?: AccountType;
   platform: Platform;
   isPsPlus: boolean;
+  lifecycleType: LifecycleType;
+  expiresOn?: string;
   games?: Game[];
   createdAt: number;
   updatedAt: number;
@@ -33,6 +36,8 @@ export interface AccountFormData {
   accountType?: AccountType;
   platform: Platform;
   isPsPlus: boolean;
+  lifecycleType: LifecycleType;
+  expiresOn: string;
 }
 
 export interface GameFormData {

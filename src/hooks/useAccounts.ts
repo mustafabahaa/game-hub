@@ -73,11 +73,15 @@ function mapRow(row: any): Account {
     accountType: row.account_type,
     platform: row.platform || "PlayStation",
     isPsPlus: row.is_ps_plus,
+    lifecycleType: row.lifecycle_type || "lifetime",
+    expiresOn: row.expires_on || undefined,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     games: row.games ? row.games.map((g: any) => ({
       id: String(g.id),
+      accountId: String(g.account_id),
       title: g.title,
       imageUrl: g.image_url,
+      createdAt: new Date(g.created_at).getTime(),
     })) : [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),

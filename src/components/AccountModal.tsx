@@ -16,6 +16,8 @@ import {
   Monitor,
   Gamepad2,
   Crown,
+  Infinity,
+  CalendarClock,
 } from "lucide-react";
 
 const EMPTY_ACCOUNT_FORM: AccountFormData = {
@@ -27,6 +29,8 @@ const EMPTY_ACCOUNT_FORM: AccountFormData = {
   accountType: "Primary",
   platform: "PlayStation",
   isPsPlus: false,
+  lifecycleType: "lifetime",
+  expiresOn: "",
 };
 
 export default function AccountModal({ 
@@ -59,6 +63,8 @@ export default function AccountModal({
         accountType: initialEditAccount.accountType,
         platform: initialEditAccount.platform,
         isPsPlus: initialEditAccount.isPsPlus,
+        lifecycleType: initialEditAccount.lifecycleType,
+        expiresOn: initialEditAccount.expiresOn || "",
       });
     } else if (initialData) {
       setEditingId(null);
@@ -81,6 +87,9 @@ export default function AccountModal({
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!form.accountName || !form.email) return showToast("Account name and email are required", "error");
+    if (form.lifecycleType === "expires_on" && !form.expiresOn) {
+      return showToast("Please choose an expiry date", "error");
+    }
 
     setSubmitting(true);
     try {
@@ -94,6 +103,8 @@ export default function AccountModal({
         account_type: form.platform === "PlayStation" ? form.accountType : null,
         platform: form.platform,
         is_ps_plus: form.platform === "PlayStation" ? form.isPsPlus : false,
+        lifecycle_type: form.lifecycleType,
+        expires_on: form.lifecycleType === "expires_on" ? form.expiresOn : null,
         updated_at: new Date().toISOString(),
       };
 
@@ -256,6 +267,49 @@ export default function AccountModal({
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="block text-xs font-black text-white/40 uppercase tracking-widest ml-1">Account Life</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, lifecycleType: "lifetime", expiresOn: "" }))}
+                      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                        form.lifecycleType === "lifetime"
+                          ? "border-white/30 bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light text-white shadow-lg"
+                          : "border-white/5 bg-white/5 text-white/20 hover:border-white/10"
+                      }`}
+                    >
+                      <Infinity size={16} />
+                      Lifetime
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, lifecycleType: "expires_on" }))}
+                      className={`flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${
+                        form.lifecycleType === "expires_on"
+                          ? "border-white/30 bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light text-white shadow-lg"
+                          : "border-white/5 bg-white/5 text-white/20 hover:border-white/10"
+                      }`}
+                    >
+                      <CalendarClock size={16} />
+                      Expires
+                    </button>
+                  </div>
+
+                  {form.lifecycleType === "expires_on" && (
+                    <div className="space-y-2">
+                      <label className="ml-1 block text-[10px] font-black uppercase tracking-widest text-white/40">Expiry Date</label>
+                      <input
+                        type="date"
+                        value={form.expiresOn}
+                        onChange={(e) => setForm((f) => ({ ...f, expiresOn: e.target.value }))}
+                        className="w-full rounded-2xl border border-white/10 bg-white/5 px-5 py-4 text-sm text-white outline-none transition-all focus:border-ps-accent-end/50 focus:bg-white/10"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

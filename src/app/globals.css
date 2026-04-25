@@ -75,7 +75,6 @@
       radial-gradient(circle at 85% 30%, rgba(0, 210, 255, 0.08), transparent 40%);
     background-attachment: fixed;
     color: var(--color-ps-text-primary);
-    font-family: var(--font-outfit), -apple-system, BlinkMacSystemFont, sans-serif;
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-font-smoothing: antialiased;

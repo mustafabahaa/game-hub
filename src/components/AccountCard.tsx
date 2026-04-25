@@ -47,6 +47,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
       : "badge-full";
   
   const PlatformIcon = account.platform === "PlayStation" ? Gamepad2 : account.platform === "Xbox" ? Shield : Monitor;
+  const expiryToneClass = account.lifecycleType === "lifetime" ? "text-white/40" : "text-amber-300";
 
   return (
     <div
@@ -232,6 +233,11 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
               Provider: <span className="text-ps-accent-end">{provider.name}</span>
             </p>
           )}
+          <p className={`mt-1 text-[10px] font-black uppercase tracking-wider ${expiryToneClass}`}>
+            {account.lifecycleType === "lifetime"
+              ? "Life: Lifetime"
+              : `Expires: ${account.expiresOn || "Not set"}`}
+          </p>
         </div>
       </div>
 

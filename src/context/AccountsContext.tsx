@@ -31,6 +31,8 @@ interface AccountRow {
   account_type?: "Primary" | "Secondary" | "Full";
   platform: string;
   is_ps_plus: boolean;
+  lifecycle_type?: "lifetime" | "expires_on";
+  expires_on?: string | null;
   created_at: string;
   updated_at: string;
   games: GameRow[];
@@ -51,6 +53,8 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     accountType: row.account_type,
     platform: (row.platform as Account["platform"]) || "PlayStation",
     isPsPlus: row.is_ps_plus,
+    lifecycleType: row.lifecycle_type || "lifetime",
+    expiresOn: row.expires_on || undefined,
     games: row.games?.map(g => ({
       id: String(g.id),
       accountId: String(g.account_id),
