@@ -130,7 +130,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
         )}
 
         {account.platform === "PlayStation" && account.accountType && (
-          <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${badgeClass}`}>
+          <div className={`absolute top-4 left-4 z-20 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${badgeClass}`}>
             {account.accountType}
           </div>
         )}
@@ -262,7 +262,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                 )}
                 {provider.whatsapp && (
                   <a
-                    href={`https://wa.me/${provider.whatsapp.replace(/[^0-9]/g, "")}`}
+                    href={`https://wa.me/20${provider.whatsapp.replace(/[^0-9]/g, "").replace(/^20/, "").replace(/^0/, "")}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded-lg text-[10px] uppercase font-bold transition-all hover:brightness-125"
