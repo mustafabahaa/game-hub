@@ -401,7 +401,7 @@ export default function DashboardPage() {
             <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] animate-pulse opacity-40 blur-xl" />
             <div className="absolute -inset-[1px] rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] z-0 opacity-90 shadow-[0_0_30px_rgba(0,102,255,0.5)]" />
             <div className="absolute inset-[2.5px] rounded-[1.35rem] bg-[#050505] z-10" />
-            <Plus size={24} className={`text-[#0099ff] transition-transform duration-500 ${isFabMenuOpen ? "rotate-45" : ""}`} />
+            <Plus size={24} className={`relative z-20 text-white transition-transform duration-500 ${isFabMenuOpen ? "rotate-45" : ""}`} />
           </button>
         </div>
 

@@ -57,6 +57,7 @@ export default function ProvidersPage() {
 
   return (
     <div className="min-h-screen bg-[#050505] text-white relative overflow-hidden flex flex-col font-sans selection:bg-[#0066ff]/30">
+      <title>Providers | GameHub</title>
       {/* ── Cinematic Backgrounds ── */}
       <div className="fixed inset-0 z-0">
         <Aurora 

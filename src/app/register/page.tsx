@@ -46,6 +46,7 @@ export default function RegisterPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 sm:p-8 relative overflow-hidden bg-[#050505]">
+      <title>Register | GameHub</title>
       
       {/* Full Page Aurora Background */}
       <div className="absolute inset-0 z-0">
