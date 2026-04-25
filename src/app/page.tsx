@@ -315,7 +315,7 @@ export default function DashboardPage() {
 
         {/* ── Main Feed ── */}
         {!loading && filteredAccounts.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
+          <div className="grid auto-rows-min grid-cols-2 items-start gap-4 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5">
             {filteredAccounts.map((account, i) => (
               <AccountCard
                 key={account.id}

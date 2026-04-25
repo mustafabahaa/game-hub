@@ -57,12 +57,11 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
       className={`
         card-glow
         ${account.isPsPlus ? "card-glow-plus" : ""}
-        group/card relative flex animate-fadeInUp flex-col overflow-hidden
+        group/card relative w-full flex flex-col overflow-hidden
         rounded-3xl
       `}
       style={{
         animationDelay: `${index * 0.07}s`,
-        opacity: 0,
         background: "rgba(10, 10, 15, 0.4)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
