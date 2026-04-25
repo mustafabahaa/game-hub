@@ -34,12 +34,15 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
 
   return (
     <div
-      className={`card-glow ${account.isPsPlus ? "card-glow-plus" : ""} rounded-2xl overflow-hidden animate-fadeInUp`}
+      className={`card-glow ${account.isPsPlus ? "card-glow-plus" : ""} rounded-3xl overflow-hidden animate-fadeInUp flex flex-col relative`}
       style={{
         animationDelay: `${index * 0.07}s`,
         opacity: 0,
-        background: "var(--color-ps-bg-card)",
-        border: "1px solid var(--color-ps-border)",
+        background: "rgba(10, 10, 15, 0.4)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        border: "1px solid rgba(255,255,255,0.05)",
+        boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.5)",
       }}
     >
       {/* Game Image */}
@@ -47,63 +50,69 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
         <img
           src={account.imageUrl}
           alt={account.gameTitle}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
           loading="lazy"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90" />
 
         {account.isPsPlus && (
           <div
-            className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+            className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg"
             style={{
-              background: "linear-gradient(135deg, rgba(196,160,0,0.9), rgba(255,215,0,0.9))",
+              background: "linear-gradient(135deg, #FFD700, #FFA500)",
               color: "#1a1a00",
+              boxShadow: "0 4px 15px rgba(255, 215, 0, 0.3)"
             }}
           >
-            <Crown size={12} />
+            <Crown size={14} />
             PS Plus
           </div>
         )}
 
-        <div className={`absolute top-3 right-3 px-2.5 py-1 rounded-full text-xs font-semibold ${badgeClass}`}>
+        <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${badgeClass}`}>
           {account.accountType}
         </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4">
-          <h3 className="text-lg font-bold text-white leading-tight drop-shadow-lg">
+        <div className="absolute bottom-0 left-0 right-0 p-5 transform transition-transform duration-500 group-hover:-translate-y-2">
+          <h3 className="text-xl font-black text-white leading-tight drop-shadow-2xl">
             {account.gameTitle}
           </h3>
           {provider && (
-            <p className="text-xs mt-1" style={{ color: "var(--color-ps-text-secondary)" }}>
-              Provider: {provider.name}
+            <p className="text-xs mt-1.5 font-semibold tracking-wide uppercase text-white/50">
+              Provider: <span className="text-[#00d2ff]">{provider.name}</span>
             </p>
           )}
         </div>
       </div>
 
       {/* Action Area */}
-      <div className="p-4">
+      <div className="p-5 flex-1 flex flex-col bg-gradient-to-b from-[#050505] to-black/60 relative z-10">
         <button
           onClick={() => setShowCredentials(!showCredentials)}
-          className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-semibold transition-all duration-300 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl text-sm font-bold tracking-wide transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] relative overflow-hidden group"
           style={{
             background: showCredentials
-              ? "var(--color-ps-bg-elevated)"
+              ? "rgba(255, 255, 255, 0.05)"
               : account.isPsPlus
-              ? "linear-gradient(135deg, var(--color-ps-plus-gold), var(--color-ps-plus-gold-light))"
-              : "linear-gradient(135deg, var(--color-ps-accent-start), var(--color-ps-accent-end))",
-            color: showCredentials ? "var(--color-ps-text-secondary)" : account.isPsPlus ? "#1a1a00" : "#fff",
+              ? "linear-gradient(135deg, #FFD700, #FFA500)"
+              : "linear-gradient(135deg, #0044ff, #00d2ff)",
+            color: showCredentials ? "white" : account.isPsPlus ? "#1a1a00" : "#fff",
+            boxShadow: showCredentials ? "none" : account.isPsPlus ? "0 10px 20px rgba(255, 215, 0, 0.3)" : "0 10px 20px rgba(0, 112, 209, 0.3)",
+            border: showCredentials ? "1px solid rgba(255, 255, 255, 0.1)" : "none"
           }}
         >
+          {!showCredentials && (
+            <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none" />
+          )}
           {showCredentials ? (
             <>
               <Shield size={16} />
-              Hide Credentials
+              Vault Locked
             </>
           ) : (
             <>
               <Eye size={16} />
-              View Credentials
+              Access Vault
             </>
           )}
         </button>

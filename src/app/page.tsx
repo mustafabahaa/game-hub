@@ -1,10 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useProviders } from "@/hooks/useProviders";
 import GameCard from "@/components/GameCard";
 import SkeletonCard from "@/components/SkeletonCard";
+import { supabase } from "@/lib/supabase";
+import Aurora from "@/components/Aurora";
+import SplitText from "@/components/SplitText";
 import {
   Gamepad2,
   Crown,
@@ -12,15 +16,61 @@ import {
   Layers,
   AlertCircle,
   Settings,
+  LogOut,
+  Loader2,
 } from "lucide-react";
 import Link from "next/link";
 
 type Tab = "all" | "psplus";
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const [userEmail, setUserEmail] = useState("");
+  const [userName, setUserName] = useState("User");
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace("/login");
+      } else {
+        setIsAuthenticated(true);
+        setUserEmail(session.user.email || "");
+        setUserName(session.user.user_metadata?.full_name || "Player");
+        if (session.user.user_metadata?.role === "admin") {
+          setIsAdmin(true);
+        }
+      }
+      setAuthLoading(false);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) {
+        router.replace("/login");
+      } else {
+        setIsAuthenticated(true);
+        setUserEmail(session.user.email || "");
+        setUserName(session.user.user_metadata?.full_name || "Player");
+        if (session.user.user_metadata?.role === "admin") {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
+
   const { accounts, loading: accountsLoading, error } = useAccounts();
   const { providers, loading: providersLoading } = useProviders();
-  const loading = accountsLoading || providersLoading;
+  const loading = accountsLoading || providersLoading || authLoading;
   
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -46,121 +96,168 @@ export default function DashboardPage() {
     [accounts]
   );
 
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace("/login");
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-ps-bg-primary)" }}>
+        <Loader2 size={32} className="animate-spin" style={{ color: "var(--color-ps-accent-blue)" }} />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
   return (
     <div className="min-h-screen" style={{ background: "var(--color-ps-bg-primary)" }}>
       {/* ── Header ── */}
-      <header
-        className="sticky top-0 z-50 glass"
-        style={{ borderBottom: "1px solid var(--color-ps-border)" }}
-      >
+      <header className="absolute top-0 w-full z-50 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center"
-                style={{
-                  background: "linear-gradient(135deg, var(--color-ps-accent-start), var(--color-ps-accent-end))",
-                }}
-              >
-                <Gamepad2 size={22} color="#fff" />
-              </div>
-              <div>
-                <h1 className="text-lg font-bold gradient-text">GameHub</h1>
-                <p
-                  className="text-[10px] uppercase tracking-widest"
-                  style={{ color: "var(--color-ps-text-muted)" }}
-                >
-                  Credentials Manager
-                </p>
-              </div>
+              <Gamepad2 size={32} className="text-[#00d2ff]" />
+              <h1 className="text-2xl font-bold text-white tracking-wide">GAMEHUB</h1>
             </div>
-            <Link
-              href="/admin"
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-300 hover:scale-105"
-              style={{
-                background: "var(--color-ps-bg-elevated)",
-                color: "var(--color-ps-text-secondary)",
-                border: "1px solid var(--color-ps-border)",
-              }}
-            >
-              <Settings size={16} />
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
+            
+            <div className="relative" ref={profileRef}>
+              <button
+                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                className="flex items-center gap-3 px-4 py-2 rounded-full glass hover:bg-white/10 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00d2ff] to-[#0044ff] shadow-inner flex items-center justify-center text-sm font-bold text-white border border-white/20">
+                  {userName.charAt(0).toUpperCase()}
+                </div>
+                <span className="hidden sm:block text-sm font-medium text-white">{userName}</span>
+              </button>
+
+              {isProfileOpen && (
+                <div className="absolute right-0 mt-3 w-64 rounded-2xl glass p-2 shadow-2xl animate-fadeInUp">
+                  <div className="px-4 py-3 border-b border-white/10 mb-2">
+                    <p className="text-sm font-bold text-white truncate">{userName}</p>
+                    <p className="text-xs text-white/50 truncate">{userEmail}</p>
+                  </div>
+                  
+                  {isAdmin && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white hover:bg-[#00d2ff]/20 transition-colors mb-1"
+                    >
+                      <Settings size={16} className="text-[#00d2ff]" />
+                      Edit Game Database
+                    </Link>
+                  )}
+                  
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+                  >
+                    <LogOut size={16} />
+                    Sign Out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
+      {/* ── Hero / Top Section ── */}
+      <div className="relative pt-20 pb-32 overflow-hidden mb-12 border-b border-white/5 bg-black">
+        {/* Animated Aurora Background */}
+        <div className="absolute inset-0 z-0 opacity-80 pointer-events-none">
+          <Aurora 
+            colorStops={["#00d2ff", "#0044ff", "#000000"]}
+            blend={0.5}
+            amplitude={1.2}
+            speed={0.5}
+          />
+        </div>
+        
+        {/* Vignette Overlay */}
+        <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,black_100%)] opacity-80" />
+
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-10">
+          <SplitText
+            text="Your Ultimate Game Vault"
+            className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight drop-shadow-2xl inline-block"
+            delay={30}
+            from={{ opacity: 0, transform: 'translate3d(0, 50px, 0)' }}
+            to={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
+            ease="power4.out"
+          />
+          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-medium drop-shadow-md animate-fadeInUp" style={{ animationDelay: "1s" }}>
+            Seamlessly organize and access your credentials across all your favorite platforms.
+          </p>
+        </div>
+      </div>
+
       {/* ── Main ── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 relative z-20 -mt-24">
+        
         {/* Tabs + Search */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <div
-            className="flex rounded-xl p-1 gap-1"
-            style={{ background: "var(--color-ps-bg-secondary)", border: "1px solid var(--color-ps-border)" }}
-          >
+        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
+          
+          {/* Elegant Pill Tabs */}
+          <div className="flex p-1.5 rounded-[2rem] bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl">
             <button
               onClick={() => setActiveTab("all")}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 cursor-pointer"
-              style={{
-                background:
-                  activeTab === "all"
-                    ? "linear-gradient(135deg, var(--color-ps-accent-start), var(--color-ps-accent-end))"
-                    : "transparent",
-                color: activeTab === "all" ? "#fff" : "var(--color-ps-text-muted)",
-              }}
+              className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "all" ? "text-white" : "text-white/40 hover:text-white/70"}`}
             >
-              <Layers size={16} />
-              All Games
-              <span
-                className="ml-1 px-2 py-0.5 rounded-full text-xs"
-                style={{
-                  background: activeTab === "all" ? "rgba(255,255,255,0.2)" : "var(--color-ps-bg-elevated)",
-                }}
-              >
-                {accounts.length}
+              {activeTab === "all" && (
+                <div className="absolute inset-0 bg-gradient-to-r from-[#0044ff] to-[#00d2ff] rounded-full shadow-[0_0_20px_rgba(0,112,209,0.4)]" />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                <Layers size={18} /> All Games
+                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "all" ? "bg-white/20" : "bg-white/10"}`}>
+                  {accounts.length}
+                </span>
               </span>
             </button>
             <button
               onClick={() => setActiveTab("psplus")}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-300 cursor-pointer"
-              style={{
-                background:
-                  activeTab === "psplus"
-                    ? "linear-gradient(135deg, var(--color-ps-plus-gold), var(--color-ps-plus-gold-light))"
-                    : "transparent",
-                color: activeTab === "psplus" ? "#1a1a00" : "var(--color-ps-text-muted)",
-              }}
+              className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "psplus" ? "text-[#1a1a00]" : "text-white/40 hover:text-white/70"}`}
             >
-              <Crown size={16} />
-              PS Plus
-              <span
-                className="ml-1 px-2 py-0.5 rounded-full text-xs"
-                style={{
-                  background: activeTab === "psplus" ? "rgba(0,0,0,0.2)" : "var(--color-ps-bg-elevated)",
-                }}
-              >
-                {psPlusCount}
+              {activeTab === "psplus" && (
+                <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] to-[#FFA500] rounded-full shadow-[0_0_20px_rgba(255,215,0,0.4)]" />
+              )}
+              <span className="relative z-10 flex items-center gap-2">
+                <Crown size={18} /> PS Plus
+                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "psplus" ? "bg-black/20" : "bg-white/10"}`}>
+                  {psPlusCount}
+                </span>
               </span>
             </button>
           </div>
 
-          <div className="relative w-full sm:w-72">
+          {/* Elegant Search Bar */}
+          <div className="relative group w-full md:w-80">
             <Search
-              size={16}
-              className="absolute left-3 top-1/2 -translate-y-1/2"
-              style={{ color: "var(--color-ps-text-muted)" }}
+              size={18}
+              className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#00d2ff] transition-colors"
             />
             <input
               type="text"
-              placeholder="Search games..."
+              placeholder="Search vault..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl text-sm transition-all duration-300"
-              style={{
-                background: "var(--color-ps-bg-secondary)",
-                border: "1px solid var(--color-ps-border)",
-                color: "var(--color-ps-text-primary)",
-              }}
+              className="w-full pl-12 pr-6 py-3.5 rounded-full text-sm transition-all duration-300 outline-none placeholder:text-white/30 focus:border-[#00d2ff]/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(0,112,209,0.2)] bg-black/40 backdrop-blur-2xl border border-white/5 text-white font-medium shadow-2xl"
             />
           </div>
         </div>
@@ -222,12 +319,6 @@ export default function DashboardPage() {
         )}
       </main>
 
-      <footer
-        className="mt-12 py-6 text-center text-xs"
-        style={{ borderTop: "1px solid var(--color-ps-border)", color: "var(--color-ps-text-muted)" }}
-      >
-        <p>GameHub &copy; {new Date().getFullYear()} &mdash; PS5 Account Manager</p>
-      </footer>
     </div>
   );
 }

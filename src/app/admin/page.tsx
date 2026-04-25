@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, FormEvent } from "react";
+import { useState, useRef, FormEvent, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAccounts } from "@/hooks/useAccounts";
 import { useProviders } from "@/hooks/useProviders";
 import { Account, AccountFormData, AccountType } from "@/types/account";
@@ -22,6 +23,7 @@ import {
   AlertCircle,
   CheckCircle,
   Users,
+  LogOut,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -45,6 +47,29 @@ const EMPTY_PROVIDER_FORM: ProviderFormData = {
 };
 
 export default function AdminPage() {
+  const router = useRouter();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace("/login");
+      } else {
+        setIsAuthenticated(true);
+      }
+      setAuthLoading(false);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!session) router.replace("/login");
+    });
+
+    return () => subscription.unsubscribe();
+  }, [router]);
+
   const { accounts, loading: accountsLoading } = useAccounts();
   const { providers, loading: providersLoading } = useProviders();
   
@@ -156,6 +181,11 @@ export default function AdminPage() {
     setSubmittingProvider(false);
   };
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    router.replace("/");
+  };
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!form.gameTitle || !form.email) {
@@ -231,6 +261,16 @@ export default function AdminPage() {
     setSubmitting(false);
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--color-ps-bg-primary)" }}>
+        <Loader2 size={32} className="animate-spin" style={{ color: "var(--color-ps-accent-blue)" }} />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) return null;
+
   return (
     <div className="min-h-screen" style={{ background: "var(--color-ps-bg-primary)" }}>
       {/* Toast */}
@@ -267,11 +307,21 @@ export default function AdminPage() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Shield size={18} style={{ color: "var(--color-ps-accent-blue)" }} />
-              <span className="text-sm font-medium" style={{ color: "var(--color-ps-text-secondary)" }}>
-                Admin Mode
-              </span>
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex items-center gap-2">
+                <Shield size={18} style={{ color: "var(--color-ps-accent-blue)" }} />
+                <span className="text-sm font-medium" style={{ color: "var(--color-ps-text-secondary)" }}>
+                  Admin Mode
+                </span>
+              </div>
+              <button
+                onClick={handleSignOut}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all hover:bg-red-500/10 hover:text-red-400"
+                style={{ color: "var(--color-ps-text-muted)" }}
+              >
+                <LogOut size={16} />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
             </div>
           </div>
         </div>
