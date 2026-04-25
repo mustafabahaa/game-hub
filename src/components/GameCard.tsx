@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Account } from "@/types/account";
 import { Provider } from "@/types/provider";
 import { Eye, Copy, Check, ExternalLink, KeyRound, Shield, Crown, MessageCircle, Link as LinkIcon, Info } from "lucide-react";
@@ -14,6 +14,16 @@ interface GameCardProps {
 export default function GameCard({ account, provider, index }: GameCardProps) {
   const [showCredentials, setShowCredentials] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+
+  const divRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [opacity, setOpacity] = useState(0);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!divRef.current) return;
+    const rect = divRef.current.getBoundingClientRect();
+    setPosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
 
   const handleCopy = async (text: string, field: string) => {
     try {
@@ -34,7 +44,11 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
 
   return (
     <div
-      className={`card-glow ${account.isPsPlus ? "card-glow-plus" : ""} rounded-3xl overflow-hidden animate-fadeInUp flex flex-col relative`}
+      ref={divRef}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setOpacity(1)}
+      onMouseLeave={() => setOpacity(0)}
+      className={`card-glow ${account.isPsPlus ? "card-glow-plus" : ""} rounded-3xl overflow-hidden animate-fadeInUp flex flex-col relative group/card`}
       style={{
         animationDelay: `${index * 0.07}s`,
         opacity: 0,
@@ -45,6 +59,16 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
         boxShadow: "inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.5)",
       }}
     >
+      {/* Interactive Spotlight */}
+      <div
+        className="pointer-events-none absolute -inset-px rounded-3xl opacity-0 transition-opacity duration-300 z-50"
+        style={{
+          opacity,
+          background: account.isPsPlus 
+            ? `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255,215,0,0.15), transparent 40%)`
+            : `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(0,210,255,0.15), transparent 40%)`,
+        }}
+      />
       {/* Game Image */}
       <div className="relative aspect-[3/4] overflow-hidden group">
         <img

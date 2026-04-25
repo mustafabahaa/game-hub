@@ -8,6 +8,7 @@ import GameCard from "@/components/GameCard";
 import SkeletonCard from "@/components/SkeletonCard";
 import { supabase } from "@/lib/supabase";
 import Aurora from "@/components/Aurora";
+import SplashCursor from "@/components/SplashCursor";
 import SplitText from "@/components/SplitText";
 import {
   Gamepad2,
@@ -126,30 +127,45 @@ export default function DashboardPage() {
   if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-ps-bg-primary)" }}>
+    <div className="min-h-screen relative bg-[#050505] overflow-hidden">
+      
+      {/* ── Global Cinematic Backgrounds ── */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <Aurora 
+          colorStops={["#00d2ff", "#0044ff", "#1a0b2e"]}
+          blend={0.6}
+          amplitude={1.2}
+          speed={0.5}
+        />
+        <SplashCursor BACK_COLOR={{ r: 0, g: 0, b: 0 }} TRANSPARENT={true} />
+      </div>
+      
+      {/* Subtle overlay for contrast */}
+      <div className="fixed inset-0 bg-black/50 z-0 mix-blend-overlay pointer-events-none" />
+      <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80 z-0 pointer-events-none" />
+
       {/* ── Header ── */}
-      <header className="absolute top-0 w-full z-50 py-6">
+      <header className="relative z-50 w-full pt-8 pb-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Gamepad2 size={32} className="text-[#00d2ff]" />
-              <h1 className="text-2xl font-bold text-white tracking-wide">GAMEHUB</h1>
+            <div className="flex items-center gap-2">
+              <Gamepad2 size={24} className="text-[#00d2ff]" />
+              <h1 className="text-xl font-black text-white tracking-widest drop-shadow-md uppercase">GameHub</h1>
             </div>
             
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
-                className="flex items-center gap-3 px-4 py-2 rounded-full glass hover:bg-white/10 transition-colors"
+                className="flex items-center hover:scale-105 active:scale-95 transition-transform duration-300"
               >
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-[#00d2ff] to-[#0044ff] shadow-inner flex items-center justify-center text-sm font-bold text-white border border-white/20">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#00d2ff] to-[#0044ff] shadow-[0_0_20px_rgba(0,112,209,0.3)] flex items-center justify-center text-sm font-bold text-white">
                   {userName.charAt(0).toUpperCase()}
                 </div>
-                <span className="hidden sm:block text-sm font-medium text-white">{userName}</span>
               </button>
 
               {isProfileOpen && (
-                <div className="absolute right-0 mt-3 w-64 rounded-2xl glass p-2 shadow-2xl animate-fadeInUp">
-                  <div className="px-4 py-3 border-b border-white/10 mb-2">
+                <div className="absolute right-0 mt-4 w-56 rounded-2xl p-2 shadow-[0_10px_50px_rgba(0,0,0,0.8)] bg-black/80 backdrop-blur-3xl border border-white/5 animate-fadeInUp">
+                  <div className="px-4 py-3 border-b border-white/5 mb-2">
                     <p className="text-sm font-bold text-white truncate">{userName}</p>
                     <p className="text-xs text-white/50 truncate">{userEmail}</p>
                   </div>
@@ -157,16 +173,16 @@ export default function DashboardPage() {
                   {isAdmin && (
                     <Link
                       href="/admin"
-                      className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-white hover:bg-[#00d2ff]/20 transition-colors mb-1"
+                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:bg-white/5 transition-colors mb-1 group"
                     >
-                      <Settings size={16} className="text-[#00d2ff]" />
-                      Edit Game Database
+                      <Settings size={16} className="text-[#00d2ff] group-hover:rotate-90 transition-transform duration-500" />
+                      Settings
                     </Link>
                   )}
                   
                   <button
                     onClick={handleSignOut}
-                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut size={16} />
                     Sign Out
@@ -179,37 +195,24 @@ export default function DashboardPage() {
       </header>
 
       {/* ── Hero / Top Section ── */}
-      <div className="relative pt-20 pb-32 overflow-hidden mb-12 border-b border-white/5 bg-black">
-        {/* Animated Aurora Background */}
-        <div className="absolute inset-0 z-0 opacity-80 pointer-events-none">
-          <Aurora 
-            colorStops={["#00d2ff", "#0044ff", "#000000"]}
-            blend={0.5}
-            amplitude={1.2}
-            speed={0.5}
-          />
-        </div>
-        
-        {/* Vignette Overlay */}
-        <div className="absolute inset-0 z-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_0%,black_100%)] opacity-80" />
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center pt-10">
+      <div className="relative pt-16 pb-24 overflow-hidden mb-8 z-10">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <SplitText
-            text="Your Ultimate Game Vault"
-            className="text-5xl md:text-7xl font-black text-white mb-6 tracking-tight drop-shadow-2xl inline-block"
-            delay={30}
+            text="The Ultimate Vault"
+            className="text-5xl sm:text-6xl md:text-8xl font-black text-white mb-6 tracking-tight drop-shadow-[0_10px_30px_rgba(0,112,209,0.3)] inline-block"
+            delay={40}
             from={{ opacity: 0, transform: 'translate3d(0, 50px, 0)' }}
             to={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
             ease="power4.out"
           />
-          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-medium drop-shadow-md animate-fadeInUp" style={{ animationDelay: "1s" }}>
-            Seamlessly organize and access your credentials across all your favorite platforms.
+          <p className="text-lg md:text-xl text-white/70 max-w-2xl mx-auto font-medium drop-shadow-md animate-fadeInUp tracking-wide" style={{ animationDelay: "1s" }}>
+            All your credentials. All your platforms. One unified interface.
           </p>
         </div>
       </div>
 
       {/* ── Main ── */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 relative z-20 -mt-24">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 relative z-20">
         
         {/* Tabs + Search */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
