@@ -35,7 +35,6 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authLoading, setAuthLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("User");
@@ -93,9 +92,6 @@ export default function DashboardPage() {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || "");
         setUserName(session.user.user_metadata?.full_name || "Player");
-        if (session.user.user_metadata?.role === "admin") {
-          setIsAdmin(true);
-        }
       }
       setAuthLoading(false);
     };
@@ -108,11 +104,6 @@ export default function DashboardPage() {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || "");
         setUserName(session.user.user_metadata?.full_name || "Player");
-        if (session.user.user_metadata?.role === "admin") {
-          setIsAdmin(true);
-        } else {
-          setIsAdmin(false);
-        }
       }
     });
 
@@ -207,8 +198,6 @@ export default function DashboardPage() {
                 <Gamepad2 size={24} className="text-[#00d2ff]" />
                 <h1 className="text-xl font-black text-white tracking-widest drop-shadow-md uppercase">GameHub</h1>
               </div>
-
-              {isAdmin && (
                 <Link
                   href="/providers"
                   className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
@@ -216,7 +205,6 @@ export default function DashboardPage() {
                   <Database size={14} className="text-[#0099ff]" />
                   Manage Providers
                 </Link>
-              )}
             </div>
 
             <div className="relative" ref={profileRef}>
@@ -334,7 +322,6 @@ export default function DashboardPage() {
                 account={account}
                 index={i}
                 provider={providers.find((p) => p.id === account.providerId)}
-                isAdmin={isAdmin}
                 onEdit={(acc) => openAccountModal(acc)}
                 onDelete={handleDeleteAccount}
                 onViewDetails={openDetailModal}
@@ -373,9 +360,8 @@ export default function DashboardPage() {
       />
     </main>
 
-      {/* ── Fixed FAB for Admin with Menu ── */}
-      {isAdmin && (
-        <div className="fixed bottom-8 right-8 z-[60] flex flex-col items-end gap-4">
+      {/* ── Fixed FAB with Menu ── */}
+      <div className="fixed bottom-8 right-8 md:bottom-12 md:right-12 z-[90] flex flex-col items-end gap-4">
           {isFabMenuOpen && (
             <div
               id="fab-menu"
@@ -415,13 +401,11 @@ export default function DashboardPage() {
             <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] animate-pulse opacity-40 blur-xl" />
             <div className="absolute -inset-[1px] rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] z-0 opacity-90 shadow-[0_0_30px_rgba(0,102,255,0.5)]" />
             <div className="absolute inset-[2.5px] rounded-[1.35rem] bg-[#050505] z-10" />
-            <Plus size={32} className="text-white relative z-20 transition-transform duration-500 drop-shadow-[0_0_8px_rgba(0,102,255,0.8)]" />
+            <Plus size={24} className={`text-[#0099ff] transition-transform duration-500 ${isFabMenuOpen ? "rotate-45" : ""}`} />
           </button>
         </div>
-      )}
 
-      {isAdmin && (
-        <>
+      <>
           <AccountModal
             isOpen={isAccountModalOpen}
             onClose={closeAccountModal}

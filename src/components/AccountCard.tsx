@@ -10,13 +10,12 @@ interface AccountCardProps {
   account: Account;
   provider?: Provider;
   index: number;
-  isAdmin?: boolean;
   onEdit?: (account: Account) => void;
   onDelete?: (id: string) => void;
   onViewDetails?: (account: Account) => void;
 }
 
-export default function AccountCard({ account, provider, index, isAdmin, onEdit, onDelete, onViewDetails }: AccountCardProps) {
+export default function AccountCard({ account, provider, index, onEdit, onDelete, onViewDetails }: AccountCardProps) {
   const [showCredentials, setShowCredentials] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
@@ -136,8 +135,7 @@ export default function AccountCard({ account, provider, index, isAdmin, onEdit,
           </div>
         )}
 
-        {isAdmin && (
-          <div className="absolute top-14 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="absolute top-4 right-4 z-20 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -157,7 +155,6 @@ export default function AccountCard({ account, provider, index, isAdmin, onEdit,
               <Trash2 size={14} />
             </button>
           </div>
-        )}
 
         <div className="absolute bottom-0 left-0 right-0 p-5 transform transition-transform duration-500 group-hover:-translate-y-2">
           <div className="flex items-center gap-2 mb-1">

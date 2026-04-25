@@ -27,7 +27,6 @@ export default function RegisterPage() {
       options: {
         data: {
           full_name: name,
-          role: "admin",
         },
       },
     });
