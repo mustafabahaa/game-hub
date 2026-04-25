@@ -1150,7 +1150,11 @@ export default function SplashCursor({
       if (!config.RAINBOW_MODE) {
         return hexToRGB(config.COLOR!);
       }
-      const c = HSVtoRGB(Math.random(), 1.0, 1.0);
+
+      // Keep the ReactBits splash palette in the blue/purple family only.
+      // HSV hue values: ~0.58 (cyan-blue) to ~0.82 (violet).
+      const hue = 0.58 + Math.random() * 0.24;
+      const c = HSVtoRGB(hue, 0.95, 1.0);
       c.r *= 0.15;
       c.g *= 0.15;
       c.b *= 0.15;
