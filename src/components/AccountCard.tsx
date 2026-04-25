@@ -147,32 +147,27 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
           to-transparent opacity-80
         " />
 
-        {account.isPsPlus && (
-          <div
-            className="
-              absolute top-4 left-4 flex items-center gap-1.5 rounded-full px-3
-              py-1.5 text-xs font-bold shadow-lg
-            "
-            style={{
-              background: "linear-gradient(135deg, #FFD700, #FFA500)",
-              color: "#1a1a00",
-              boxShadow: "0 4px 15px rgba(255, 215, 0, 0.3)"
-            }}
-          >
-            <Crown size={14} />
-            PS Plus
-          </div>
-        )}
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+          {account.isPsPlus && (
+            <div
+              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold shadow-lg"
+              style={{
+                background: "linear-gradient(135deg, #FFD700, #FFA500)",
+                color: "#1a1a00",
+                boxShadow: "0 4px 15px rgba(255, 215, 0, 0.3)",
+              }}
+            >
+              <Crown size={14} />
+              PS Plus
+            </div>
+          )}
 
-        {account.platform === "PlayStation" && account.accountType && (
-          <div className={`
-            absolute top-4 left-4 z-20 rounded-full px-3 py-1.5 text-xs
-            font-bold shadow-lg
-            ${badgeClass}
-          `}>
-            {account.accountType}
-          </div>
-        )}
+          {account.platform === "PlayStation" && account.accountType && (
+            <div className={`rounded-full px-3 py-1.5 text-xs font-bold shadow-lg ${badgeClass}`}>
+              {account.accountType}
+            </div>
+          )}
+        </div>
 
         <div className="
           absolute top-4 right-4 z-20 flex gap-2 opacity-0 transition-opacity
@@ -295,7 +290,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
               copiedField={copiedField}
               onCopy={handleCopy}
             />
-            
+
             {account.password ? (
               <CredentialRow
                 label="Password"
@@ -306,14 +301,15 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                 isSecret
               />
             ) : (
-              <div className="
-                flex items-center gap-2 rounded-lg px-3 py-2 text-xs
-              " style={{ background: "rgba(255, 215, 0, 0.1)", border: "1px solid rgba(255, 215, 0, 0.3)" }}>
+              <div
+                className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
+                style={{ background: "rgba(255, 215, 0, 0.1)", border: "1px solid rgba(255, 215, 0, 0.3)" }}
+              >
                 <Info size={14} style={{ color: "var(--color-ps-plus-gold-light)" }} />
                 <span style={{ color: "var(--color-ps-plus-gold-light)" }}>OTA Sign-in (Contact Provider)</span>
               </div>
             )}
-            
+
             {account.otpSecret && (
               <CredentialRow
                 label="OTP Secret"
