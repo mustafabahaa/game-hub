@@ -13,10 +13,17 @@ interface AccountsContextType {
 
 const AccountsContext = createContext<AccountsContextType | undefined>(undefined);
 
+interface GameRow {
+  id: string;
+  account_id: string;
+  title: string;
+  image_url: string;
+  created_at: string;
+}
+
 interface AccountRow {
   id: string | number;
-  game_title: string;
-  image_url: string;
+  account_name: string;
   email: string;
   password?: string;
   otp_secret?: string;
@@ -26,6 +33,7 @@ interface AccountRow {
   is_ps_plus: boolean;
   created_at: string;
   updated_at: string;
+  games: GameRow[];
 }
 
 export function AccountsProvider({ children }: { children: ReactNode }) {
@@ -35,8 +43,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
 
   const mapRow = useCallback((row: AccountRow): Account => ({
     id: String(row.id),
-    gameTitle: row.game_title,
-    imageUrl: row.image_url,
+    accountName: row.account_name,
     email: row.email,
     password: row.password || undefined,
     otpSecret: row.otp_secret || undefined,
@@ -44,6 +51,13 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
     accountType: row.account_type,
     platform: (row.platform as Account["platform"]) || "PlayStation",
     isPsPlus: row.is_ps_plus,
+    games: row.games?.map(g => ({
+      id: String(g.id),
+      accountId: String(g.account_id),
+      title: g.title,
+      imageUrl: g.image_url,
+      createdAt: new Date(g.created_at).getTime(),
+    })) || [],
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   }), []);
@@ -51,7 +65,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   const fetchAccounts = useCallback(async () => {
     const { data, error: fetchError } = await supabase
       .from("accounts")
-      .select("*")
+      .select("*, games(*)")
       .order("created_at", { ascending: false });
 
     if (fetchError) {
@@ -73,6 +87,13 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "accounts" },
+        () => {
+          fetchAccounts();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "games" },
         () => {
           fetchAccounts();
         }

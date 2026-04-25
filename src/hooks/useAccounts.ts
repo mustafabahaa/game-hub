@@ -65,7 +65,7 @@ export function useAccounts() {
 function mapRow(row: any): Account {
   return {
     id: String(row.id),
-    gameTitle: row.game_title,
+    accountName: row.account_name,
     imageUrl: row.image_url,
     email: row.email,
     password: row.password || undefined,
@@ -74,6 +74,7 @@ function mapRow(row: any): Account {
     accountType: row.account_type,
     platform: row.platform || "PlayStation",
     isPsPlus: row.is_ps_plus,
+    includedGames: row.included_games || undefined,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
   };

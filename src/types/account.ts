@@ -1,10 +1,17 @@
 export type AccountType = "Primary" | "Secondary" | "Full";
 export type Platform = "PlayStation" | "Xbox" | "PC";
 
+export interface Game {
+  id: string;
+  accountId: string;
+  title: string;
+  imageUrl: string;
+  createdAt: number;
+}
+
 export interface Account {
   id: string;
-  gameTitle: string;
-  imageUrl: string;
+  accountName: string;
   email: string;
   password?: string;
   otpSecret?: string;
@@ -12,12 +19,13 @@ export interface Account {
   accountType?: AccountType;
   platform: Platform;
   isPsPlus: boolean;
+  games?: Game[];
   createdAt: number;
   updatedAt: number;
 }
 
 export interface AccountFormData {
-  gameTitle: string;
+  accountName: string;
   email: string;
   password: string;
   otpSecret: string;
@@ -25,6 +33,10 @@ export interface AccountFormData {
   accountType?: AccountType;
   platform: Platform;
   isPsPlus: boolean;
+}
+
+export interface GameFormData {
+  title: string;
   imageFile: File | null;
   imageUrl?: string;
 }

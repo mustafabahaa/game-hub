@@ -6,23 +6,23 @@ import { Account } from "@/types/account";
 import { Provider } from "@/types/provider";
 import { Eye, Copy, Check, ExternalLink, KeyRound, Shield, Crown, MessageCircle, Link as LinkIcon, Info, Pencil, Trash2, Monitor, Gamepad2 } from "lucide-react";
 
-interface GameCardProps {
+interface AccountCardProps {
   account: Account;
   provider?: Provider;
   index: number;
   isAdmin?: boolean;
   onEdit?: (account: Account) => void;
   onDelete?: (id: string) => void;
+  onViewDetails?: (account: Account) => void;
 }
 
-export default function GameCard({ account, provider, index, isAdmin, onEdit, onDelete }: GameCardProps) {
+export default function AccountCard({ account, provider, index, isAdmin, onEdit, onDelete, onViewDetails }: AccountCardProps) {
   const [showCredentials, setShowCredentials] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
-  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!divRef.current) return;
@@ -78,20 +78,43 @@ export default function GameCard({ account, provider, index, isAdmin, onEdit, on
             : `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(0,210,255,0.15), transparent 40%)`,
         }}
       />
-      {/* Game Image */}
-      <div className="relative aspect-[3/4] overflow-hidden group bg-zinc-900/50">
-        {!isImageLoaded && (
-          <div className="absolute inset-0 skeleton z-10" />
+      {/* Game Image Collage */}
+      <div 
+        className="relative aspect-[3/4] overflow-hidden group bg-zinc-900/50 cursor-pointer"
+        onClick={() => onViewDetails?.(account)}
+      >
+        {account.games && account.games.length > 0 ? (
+          <div className={`grid h-full ${
+            account.games.length === 1 ? 'grid-cols-1' : 
+            account.games.length === 2 ? 'grid-cols-2' : 
+            'grid-cols-2 grid-rows-2'
+          }`}>
+            {account.games.slice(0, 4).map((game, i) => (
+              <div key={game.id} className="relative w-full h-full border-[0.5px] border-white/5 overflow-hidden">
+                <Image
+                  src={game.imageUrl}
+                  alt={game.title}
+                  fill
+                  className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  unoptimized
+                />
+              </div>
+            ))}
+            {account.games.length > 4 && (
+              <div className="absolute bottom-2 right-2 px-2 py-1 rounded-md bg-black/80 backdrop-blur-md text-[8px] font-black text-white uppercase tracking-widest border border-white/10 z-20">
+                +{account.games.length - 4} More
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full text-white/10 gap-3">
+            <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center">
+              <Gamepad2 size={32} />
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-widest opacity-50">Empty Account</span>
+          </div>
         )}
-        <Image
-          src={account.imageUrl}
-          alt={account.gameTitle}
-          onLoad={() => setIsImageLoaded(true)}
-          fill
-          unoptimized
-          className={`object-cover transition-all duration-1000 ${isImageLoaded ? "scale-100 blur-0 opacity-100" : "scale-110 blur-2xl opacity-0"} group-hover:scale-110 group-hover:rotate-1`}
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent opacity-80" />
 
         {account.isPsPlus && (
           <div
@@ -142,8 +165,13 @@ export default function GameCard({ account, provider, index, isAdmin, onEdit, on
             <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{account.platform}</span>
           </div>
           <h3 className="text-xl font-black text-white leading-tight drop-shadow-2xl">
-            {account.gameTitle}
+            {account.accountName}
           </h3>
+          {account.games && account.games.length > 0 && (
+            <p className="text-[9px] mt-1 font-bold text-white/30 uppercase tracking-wider line-clamp-1">
+              {account.games.length} {account.games.length === 1 ? 'Game' : 'Games'} included
+            </p>
+          )}
           {provider && (
             <p className="text-xs mt-1.5 font-semibold tracking-wide uppercase text-white/50">
               Provider: <span className="text-[#00d2ff]">{provider.name}</span>

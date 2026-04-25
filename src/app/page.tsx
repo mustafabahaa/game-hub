@@ -4,7 +4,8 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAccountsContext } from "@/context/AccountsContext";
 import { useProvidersContext } from "@/context/ProvidersContext";
-import GameCard from "@/components/GameCard";
+import AccountCard from "@/components/AccountCard";
+import AccountDetailModal from "@/components/AccountDetailModal";
 import { supabase } from "@/lib/supabase";
 import Aurora from "@/components/Aurora";
 import SplashCursor from "@/components/SplashCursor";
@@ -46,6 +47,9 @@ export default function DashboardPage() {
   const [initialAccountData, setInitialAccountData] = useState<Partial<Account> | null>(null);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+
   const openAccountModal = (account?: Account, data?: Partial<Account>) => {
     setEditingAccount(account || null);
     setInitialAccountData(data || null);
@@ -53,7 +57,10 @@ export default function DashboardPage() {
     setIsFabMenuOpen(false);
   };
 
-
+  const openDetailModal = (account: Account) => {
+    setSelectedAccount(account);
+    setDetailModalOpen(true);
+  };
 
   const closeAccountModal = () => {
     setIsAccountModalOpen(false);
@@ -128,8 +135,9 @@ export default function DashboardPage() {
       const q = searchQuery.toLowerCase();
       result = result.filter(
         (a) =>
-          a.gameTitle.toLowerCase().includes(q) ||
-          a.email.toLowerCase().includes(q)
+          a.accountName.toLowerCase().includes(q) ||
+          a.email.toLowerCase().includes(q) ||
+          (a.includedGames && a.includedGames.toLowerCase().includes(q))
       );
     }
     return result;
@@ -233,7 +241,7 @@ export default function DashboardPage() {
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut size={16} />
-                    Lock Vault
+                    Logout
                   </button>
                 </div>
               )}
@@ -246,7 +254,7 @@ export default function DashboardPage() {
       <div className="relative pt-16 pb-24 overflow-hidden mb-8 z-10">
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <SplitText
-            text="The Ultimate Vault"
+            text="The Account Hub"
             className="text-5xl sm:text-6xl md:text-8xl font-black text-white mb-6 tracking-tight drop-shadow-[0_10px_30px_rgba(0,112,209,0.3)] inline-block"
             delay={40}
             from={{ opacity: 0, transform: 'translate3d(0, 50px, 0)' }}
@@ -294,7 +302,7 @@ export default function DashboardPage() {
               />
               <input
                 type="text"
-                placeholder="Search the vault..."
+                placeholder="Search accounts or games..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-4 pr-6 py-4 bg-transparent outline-none text-white font-medium placeholder:text-white/20 text-base"
@@ -321,7 +329,7 @@ export default function DashboardPage() {
         {!loading && filteredAccounts.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {filteredAccounts.map((account, i) => (
-              <GameCard
+              <AccountCard
                 key={account.id}
                 account={account}
                 index={i}
@@ -329,6 +337,7 @@ export default function DashboardPage() {
                 isAdmin={isAdmin}
                 onEdit={(acc) => openAccountModal(acc)}
                 onDelete={handleDeleteAccount}
+                onViewDetails={openDetailModal}
               />
             ))}
           </div>
@@ -348,16 +357,21 @@ export default function DashboardPage() {
             </div>
 
             <h3 className="text-2xl font-black text-white/90 mb-3 tracking-tight uppercase">
-              {searchQuery ? "No Matches" : "Vault Offline"}
+              {searchQuery ? "No Matches" : "Account Hub Empty"}
             </h3>
             <p className="text-white/30 max-w-xs mx-auto text-xs font-bold uppercase tracking-[0.2em] leading-relaxed mb-10">
               {searchQuery
                 ? `No records found for "${searchQuery}"`
-                : "Start adding games to your collection."}
+                : "Start adding accounts to your collection."}
             </p>
           </div>
         )}
-      </main>
+        <AccountDetailModal
+        isOpen={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        account={selectedAccount}
+      />
+    </main>
 
       {/* ── Fixed FAB for Admin with Menu ── */}
       {isAdmin && (
@@ -370,26 +384,16 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   openAccountModal();
+                  setIsFabMenuOpen(false);
                 }}
                 className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all duration-300 group"
               >
                 <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#00d2ff]/20 shadow-lg border border-white/10 transition-all">
                   <Gamepad2 size={20} className="text-[#0099ff] group-hover:text-[#00d2ff]" />
                 </div>
-                <span>New Game</span>
+                <span>New Account</span>
               </button>
-
-              <button
-                onClick={() => {
-                  openAccountModal(undefined, { isPsPlus: true, gameTitle: "PS Plus", platform: "PlayStation" });
-                }}
-                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all duration-300 group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FFD700]/20 shadow-lg border border-white/10 transition-all">
-                  <Crown size={20} className="text-[#FFD700]" />
-                </div>
-                <span>Add Plus</span>
-              </button>
+              
               <Link
                 href="/providers"
                 className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-[#0066ff] transition-all duration-300 group shadow-lg"
