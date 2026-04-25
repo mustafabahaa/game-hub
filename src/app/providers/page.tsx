@@ -50,7 +50,7 @@ export default function ProvidersPage() {
     try {
       const { error } = await supabase.from("providers").delete().eq("id", id);
       if (error) throw error;
-    } catch (err) {
+    } catch {
       alert("Something went wrong. Please try again.");
     }
   };
@@ -173,7 +173,10 @@ export default function ProvidersPage() {
                         <div className="absolute inset-0 bg-[#0066ff] blur-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-500" />
                         <div className="relative w-20 h-20 rounded-3xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden group-hover:scale-110 transition-all duration-700 shadow-xl group-hover:rotate-6">
                           {p.photoUrl ? (
-                            <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.photoUrl} alt={p.name} className="w-full h-full object-cover" />
+                            </>
                           ) : (
                             <div className="text-[#0099ff] group-hover:bg-[#0099ff] group-hover:text-black w-full h-full flex items-center justify-center transition-all duration-500">
                               <Users size={38} />
@@ -216,7 +219,7 @@ export default function ProvidersPage() {
 
                     {p.notes && (
                       <div className="mb-10 p-6 rounded-3xl bg-white/5 border border-white/5 text-[11px] text-white/40 leading-relaxed font-medium italic group-hover:bg-white/10 transition-colors duration-500">
-                        "{p.notes}"
+                        &quot;{p.notes}&quot;
                       </div>
                     )}
 
@@ -249,7 +252,7 @@ export default function ProvidersPage() {
   );
 }
 
-function SocialButton({ href, icon: Icon, label }: { href?: string | null; icon: any; label: string }) {
+function SocialButton({ href, icon: Icon, label }: { href?: string | null; icon: React.ElementType; label: string }) {
   if (!href) return (
     <div className="flex flex-col items-center gap-2 opacity-10 cursor-not-allowed group/btn">
       <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center">

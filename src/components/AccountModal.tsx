@@ -71,10 +71,10 @@ export default function AccountModal({
     setTimeout(() => setToast(null), 3000);
   };
 
-  const resetForm = () => {
+  function resetForm() {
     setForm({ ...EMPTY_ACCOUNT_FORM });
     setEditingId(null);
-  };
+  }
 
   const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
@@ -105,7 +105,7 @@ export default function AccountModal({
         resetForm();
         onClose();
       }, 1000);
-    } catch (err) {
+    } catch {
       showToast("System error. Please try again.", "error");
     }
     setSubmitting(false);

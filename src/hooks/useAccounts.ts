@@ -73,6 +73,7 @@ function mapRow(row: any): Account {
     accountType: row.account_type,
     platform: row.platform || "PlayStation",
     isPsPlus: row.is_ps_plus,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     games: row.games ? row.games.map((g: any) => ({
       id: String(g.id),
       title: g.title,

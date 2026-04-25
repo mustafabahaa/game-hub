@@ -1,52 +1,64 @@
-# Game Hub
+# Game Hub - Multi-Tenant SaaS Platform
 
-A modern, multi-tenant SaaS application built with Next.js 15, Tailwind CSS, and Supabase for managing gaming accounts, vaults, and game collections.
+Welcome to Game Hub, a secure, multi-tenant platform for managing your PlayStation, Xbox, and Steam game collections.
 
 ## Features
-- **Multi-Tenant Architecture**: Each user has their own completely isolated vault, secured at the database level using Supabase Row Level Security (RLS).
-- **Nested Accounts & Games**: Create account containers (PlayStation, Xbox, PC) and organize your game library within each account.
-- **Dynamic Collages**: Account cards dynamically generate a visual collage based on the game thumbnails stored within them.
-- **Premium Aesthetics**: Built with a sleek dark mode, glassmorphism UI, Aurora background gradients, and smooth micro-animations.
-- **Provider Management**: Keep track of account providers and vendors directly in your dashboard.
 
-## Tech Stack
-- **Framework**: Next.js 15 (App Router)
-- **Styling**: Tailwind CSS & Lucide React Icons
-- **Backend & Auth**: Supabase (Database, Auth, Storage)
+- **Multi-Tenant Architecture**: Complete data isolation using Supabase Row Level Security (RLS). Every user has a strictly private workspace.
+- **Game Vault**: Store, track, and manage your purchased games across platforms.
+- **Provider Integrations**: Add custom providers or social links associated with your account.
+- **Premium Design**: Built with Next.js App Router, Tailwind CSS, and WebGL animations for a stunning user experience.
 
 ## Getting Started
 
-### 1. Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
-- A Supabase Project (for your own database)
+### Prerequisites
 
-### 2. Environment Setup
-Create a `.env.local` file in the root of the project and add your Supabase credentials:
+- Node.js (v18+)
+- A Supabase Project (Database, Auth, Storage)
 
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-```
+### Setup
 
-### 3. Database Setup (Supabase)
-You will need to run the initial SQL migrations in your Supabase SQL Editor. The required tables are:
-- `accounts`
-- `games` 
-- `providers`
-- And the `game-images` public storage bucket.
-Ensure all tables have `user_id` columns and RLS policies configured to strictly check `user_id = auth.uid()`.
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/mustafabahaa/game-hub.git
+   cd game-hub
+   ```
 
-### 4. Installation
-Install the project dependencies:
-```bash
-npm install
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
 
-### 5. Run the Development Server
-Start the local development server:
-```bash
-npm run dev
-```
+3. **Environment Variables:**
+   Create a `.env.local` file in the root directory and add your Supabase credentials:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
+4. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
+
+5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+## Database & Storage Setup
+
+You must configure your Supabase instance to run the application correctly:
+
+1.  **Tables**:
+    -   `accounts`: Needs columns `id`, `user_id`, `account_name`, `email`, `password`, `otp_secret`, `provider_id`, `account_type`, `platform`, `is_ps_plus`, `created_at`, `updated_at`.
+    -   `games`: Needs columns `id`, `account_id`, `title`, `image_url`, `created_at`.
+    -   `providers`: Needs columns `id`, `user_id`, `name`, `email`, `password`, `notes`, `photo_url`, `created_at`.
+2.  **Row Level Security (RLS)**: Enable RLS on all tables, creating policies where `user_id = auth.uid()`.
+3.  **Storage**: Create a public bucket named `game-images` and apply RLS policies for authenticated users.
+
+## Deployment
+
+The application is fully optimized for Vercel deployment. It has 0 linting errors and passing builds.
+Simply connect your GitHub repository to Vercel and add the corresponding `.env` variables in your project settings.
+
+## License
+
+This project is licensed under the MIT License.

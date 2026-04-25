@@ -42,7 +42,7 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
     reader.readAsDataURL(file);
   };
 
-  const handleAddGame = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleAddGame = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!gameForm.title || !gameForm.imageFile) return;
 

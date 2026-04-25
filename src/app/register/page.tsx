@@ -16,7 +16,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -90,7 +90,7 @@ export default function RegisterPage() {
 
           <div className="relative z-10 mt-6 md:mt-8 p-4 md:p-5 rounded-2xl bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl animate-fadeInUp hidden sm:block" style={{ animationDelay: "1.5s" }}>
             <p className="text-sm font-medium text-white/90 leading-relaxed italic drop-shadow-md">
-              "Simply unbelievable! I am really satisfied with my library and control. This is absolutely wonderful!"
+              &quot;Simply unbelievable! I am really satisfied with my library and control. This is absolutely wonderful!&quot;
             </p>
             <div className="mt-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-[#00d2ff] to-[#0044ff] flex items-center justify-center shadow-md">

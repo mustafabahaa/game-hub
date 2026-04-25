@@ -88,7 +88,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
             account.games.length === 2 ? 'grid-cols-2' : 
             'grid-cols-2 grid-rows-2'
           }`}>
-            {account.games.slice(0, 4).map((game, i) => (
+            {account.games.slice(0, 4).map((game) => (
               <div key={game.id} className="relative w-full h-full border-[0.5px] border-white/5 overflow-hidden">
                 <Image
                   src={game.imageUrl}

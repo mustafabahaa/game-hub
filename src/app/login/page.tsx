@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -84,7 +84,7 @@ export default function LoginPage() {
           <div className="max-w-sm w-full mx-auto">
             <h2 className="text-2xl font-bold text-white mb-1 drop-shadow-md">Login to GameHub</h2>
             <p className="text-sm text-white/70 mb-6 flex items-center gap-1.5">
-              Don't have an account?
+              Don&apos;t have an account?
               <Link href="/register" className="text-[#00d2ff] font-semibold hover:text-white transition-colors">
                 Register
               </Link>

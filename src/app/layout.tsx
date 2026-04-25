@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Outfit, Geist } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { AccountsProvider } from "@/context/AccountsContext";
 import { ProvidersProvider } from "@/context/ProvidersContext";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const outfit = Outfit({
   subsets: ["latin"],
