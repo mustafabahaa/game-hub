@@ -8,6 +8,7 @@ import { ProvidersProvider } from "@/context/ProvidersContext";
 const outfit = Outfit({
   subsets: ["latin"],
   display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
