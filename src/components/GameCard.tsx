@@ -3,21 +3,25 @@
 import { useState, useRef } from "react";
 import { Account } from "@/types/account";
 import { Provider } from "@/types/provider";
-import { Eye, Copy, Check, ExternalLink, KeyRound, Shield, Crown, MessageCircle, Link as LinkIcon, Info } from "lucide-react";
+import { Eye, Copy, Check, ExternalLink, KeyRound, Shield, Crown, MessageCircle, Link as LinkIcon, Info, Pencil, Trash2, Monitor, Gamepad2, Smartphone } from "lucide-react";
 
 interface GameCardProps {
   account: Account;
   provider?: Provider;
   index: number;
+  isAdmin?: boolean;
+  onEdit?: (account: Account) => void;
+  onDelete?: (id: string) => void;
 }
 
-export default function GameCard({ account, provider, index }: GameCardProps) {
+export default function GameCard({ account, provider, index, isAdmin, onEdit, onDelete }: GameCardProps) {
   const [showCredentials, setShowCredentials] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
 
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [opacity, setOpacity] = useState(0);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!divRef.current) return;
@@ -41,6 +45,8 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
       : account.accountType === "Secondary"
       ? "badge-secondary"
       : "badge-full";
+  
+  const PlatformIcon = account.platform === "PlayStation" ? Gamepad2 : account.platform === "Xbox" ? Shield : Monitor;
 
   return (
     <div
@@ -66,15 +72,21 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
           opacity,
           background: account.isPsPlus 
             ? `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(255,215,0,0.15), transparent 40%)`
+            : account.platform === "Xbox"
+            ? `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(16,124,16,0.15), transparent 40%)`
             : `radial-gradient(600px circle at ${position.x}px ${position.y}px, rgba(0,210,255,0.15), transparent 40%)`,
         }}
       />
       {/* Game Image */}
-      <div className="relative aspect-[3/4] overflow-hidden group">
+      <div className="relative aspect-[3/4] overflow-hidden group bg-zinc-900/50">
+        {!isImageLoaded && (
+          <div className="absolute inset-0 skeleton z-10" />
+        )}
         <img
           src={account.imageUrl}
           alt={account.gameTitle}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1"
+          onLoad={() => setIsImageLoaded(true)}
+          className={`w-full h-full object-cover transition-all duration-1000 ${isImageLoaded ? "scale-100 blur-0 opacity-100" : "scale-110 blur-2xl opacity-0"} group-hover:scale-110 group-hover:rotate-1`}
           loading="lazy"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90" />
@@ -93,11 +105,40 @@ export default function GameCard({ account, provider, index }: GameCardProps) {
           </div>
         )}
 
-        <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${badgeClass}`}>
-          {account.accountType}
-        </div>
+        {account.platform === "PlayStation" && account.accountType && (
+          <div className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold shadow-lg ${badgeClass}`}>
+            {account.accountType}
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="absolute top-14 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(account);
+              }}
+              className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-[#00d2ff]/40 hover:text-[#00d2ff] transition-colors"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(account.id);
+              }}
+              className="w-8 h-8 rounded-full bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-red-500/40 hover:text-red-400 transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          </div>
+        )}
 
         <div className="absolute bottom-0 left-0 right-0 p-5 transform transition-transform duration-500 group-hover:-translate-y-2">
+          <div className="flex items-center gap-2 mb-1">
+            <PlatformIcon size={14} className="text-white/40" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/40">{account.platform}</span>
+          </div>
           <h3 className="text-xl font-black text-white leading-tight drop-shadow-2xl">
             {account.gameTitle}
           </h3>

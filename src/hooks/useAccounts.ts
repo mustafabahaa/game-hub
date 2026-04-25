@@ -30,7 +30,7 @@ export function useAccounts() {
 
     // Real-time subscription
     const channel = supabase
-      .channel("accounts-realtime")
+      .channel(`accounts-realtime-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "accounts" },
@@ -72,6 +72,7 @@ function mapRow(row: any): Account {
     otpSecret: row.otp_secret || undefined,
     providerId: row.provider_id || undefined,
     accountType: row.account_type,
+    platform: row.platform || "PlayStation",
     isPsPlus: row.is_ps_plus,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),

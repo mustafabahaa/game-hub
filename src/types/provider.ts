@@ -4,6 +4,9 @@ export interface Provider {
   website?: string;
   whatsapp?: string;
   facebook?: string;
+  instagram?: string;
+  notes?: string;
+  photoUrl?: string;
   createdAt: number;
 }
 
@@ -12,4 +15,7 @@ export interface ProviderFormData {
   website: string;
   whatsapp: string;
   facebook: string;
+  instagram: string;
+  notes: string;
+  photo: File | null;
 }

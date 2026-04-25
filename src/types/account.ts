@@ -1,4 +1,5 @@
 export type AccountType = "Primary" | "Secondary" | "Full";
+export type Platform = "PlayStation" | "Xbox" | "PC";
 
 export interface Account {
   id: string;
@@ -8,7 +9,8 @@ export interface Account {
   password?: string;
   otpSecret?: string;
   providerId?: string;
-  accountType: AccountType;
+  accountType?: AccountType;
+  platform: Platform;
   isPsPlus: boolean;
   createdAt: number;
   updatedAt: number;
@@ -20,7 +22,8 @@ export interface AccountFormData {
   password: string;
   otpSecret: string;
   providerId: string;
-  accountType: AccountType;
+  accountType?: AccountType;
+  platform: Platform;
   isPsPlus: boolean;
   imageFile: File | null;
   imageUrl?: string;

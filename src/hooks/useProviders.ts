@@ -37,7 +37,7 @@ export function useProviders() {
     fetchProviders();
 
     const channel = supabase
-      .channel("providers-realtime")
+      .channel(`providers-realtime-${Date.now()}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "providers" },

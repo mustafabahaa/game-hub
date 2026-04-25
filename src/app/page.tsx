@@ -2,14 +2,16 @@
 
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { useAccounts } from "@/hooks/useAccounts";
-import { useProviders } from "@/hooks/useProviders";
+import { useAccountsContext } from "@/context/AccountsContext";
+import { useProvidersContext } from "@/context/ProvidersContext";
 import GameCard from "@/components/GameCard";
-import SkeletonCard from "@/components/SkeletonCard";
 import { supabase } from "@/lib/supabase";
 import Aurora from "@/components/Aurora";
 import SplashCursor from "@/components/SplashCursor";
 import SplitText from "@/components/SplitText";
+import AccountModal from "@/components/AccountModal";
+import ProviderModal from "@/components/ProviderModal";
+import { Account } from "@/types/account";
 import {
   Gamepad2,
   Crown,
@@ -19,6 +21,9 @@ import {
   Settings,
   LogOut,
   Loader2,
+  Plus,
+  Users,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -33,6 +38,43 @@ export default function DashboardPage() {
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("User");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+
+  const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
+  const [editAccount, setEditAccount] = useState<Account | null>(null);
+  const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+
+  const openAccountModal = (account?: Account) => {
+    setEditAccount(account || null);
+    setIsAccountModalOpen(true);
+    setIsFabMenuOpen(false);
+  };
+
+  const openProviderModal = () => {
+    setIsProviderModalOpen(true);
+    setIsFabMenuOpen(false);
+  };
+
+  const closeAccountModal = () => {
+    setIsAccountModalOpen(false);
+    setEditAccount(null);
+  };
+
+  const closeProviderModal = () => {
+    setIsProviderModalOpen(false);
+  };
+
+  const handleDeleteAccount = async (id: string) => {
+    if (!confirm("Are you sure you want to lock and delete this vault entry?")) return;
+    try {
+      const { error } = await supabase.from("accounts").delete().eq("id", id);
+      if (error) throw error;
+      // Optionally use a toast instead of alert
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete account");
+    }
+  };
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -69,10 +111,10 @@ export default function DashboardPage() {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  const { accounts, loading: accountsLoading, error } = useAccounts();
-  const { providers, loading: providersLoading } = useProviders();
+  const { accounts, loading: accountsLoading, error: accountsError } = useAccountsContext();
+  const { providers, loading: providersLoading } = useProvidersContext();
   const loading = accountsLoading || providersLoading || authLoading;
-  
+
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -104,6 +146,12 @@ export default function DashboardPage() {
       if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
+      // Also handle FAB menu close
+      const fabMenu = document.getElementById("fab-menu");
+      const fabButton = document.getElementById("fab-button");
+      if (fabMenu && !fabMenu.contains(event.target as Node) && fabButton && !fabButton.contains(event.target as Node)) {
+        setIsFabMenuOpen(false);
+      }
     }
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
@@ -128,10 +176,10 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen relative bg-[#050505] overflow-hidden">
-      
+
       {/* ── Global Cinematic Backgrounds ── */}
       <div className="fixed inset-0 z-0 pointer-events-none">
-        <Aurora 
+        <Aurora
           colorStops={["#00d2ff", "#0044ff", "#1a0b2e"]}
           blend={0.6}
           amplitude={1.2}
@@ -139,7 +187,7 @@ export default function DashboardPage() {
         />
         <SplashCursor BACK_COLOR={{ r: 0, g: 0, b: 0 }} TRANSPARENT={true} />
       </div>
-      
+
       {/* Subtle overlay for contrast */}
       <div className="fixed inset-0 bg-black/50 z-0 mix-blend-overlay pointer-events-none" />
       <div className="fixed inset-0 bg-gradient-to-b from-black/20 via-transparent to-black/80 z-0 pointer-events-none" />
@@ -148,11 +196,23 @@ export default function DashboardPage() {
       <header className="relative z-50 w-full pt-8 pb-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Gamepad2 size={24} className="text-[#00d2ff]" />
-              <h1 className="text-xl font-black text-white tracking-widest drop-shadow-md uppercase">GameHub</h1>
+            <div className="flex items-center gap-8">
+              <div className="flex items-center gap-2">
+                <Gamepad2 size={24} className="text-[#00d2ff]" />
+                <h1 className="text-xl font-black text-white tracking-widest drop-shadow-md uppercase">GameHub</h1>
+              </div>
+
+              {isAdmin && (
+                <Link 
+                  href="/providers"
+                  className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Database size={14} className="text-[#0099ff]" />
+                  Manage Providers
+                </Link>
+              )}
             </div>
-            
+
             <div className="relative" ref={profileRef}>
               <button
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
@@ -169,23 +229,15 @@ export default function DashboardPage() {
                     <p className="text-sm font-bold text-white truncate">{userName}</p>
                     <p className="text-xs text-white/50 truncate">{userEmail}</p>
                   </div>
-                  
-                  {isAdmin && (
-                    <Link
-                      href="/admin"
-                      className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-white hover:bg-white/5 transition-colors mb-1 group"
-                    >
-                      <Settings size={16} className="text-[#00d2ff] group-hover:rotate-90 transition-transform duration-500" />
-                      Settings
-                    </Link>
-                  )}
-                  
+
+                  {/* Dialog buttons removed from here as per user request */}
+
                   <button
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut size={16} />
-                    Sign Out
+                    Lock Vault
                   </button>
                 </div>
               )}
@@ -213,59 +265,63 @@ export default function DashboardPage() {
 
       {/* ── Main ── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 relative z-20">
-        
-        {/* Tabs + Search */}
+
+        {/* Tabs + Search + Add Button */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-          
-          {/* Elegant Pill Tabs */}
-          <div className="flex p-1.5 rounded-[2rem] bg-black/40 backdrop-blur-2xl border border-white/5 shadow-2xl">
-            <button
-              onClick={() => setActiveTab("all")}
-              className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "all" ? "text-white" : "text-white/40 hover:text-white/70"}`}
-            >
-              {activeTab === "all" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-[#0044ff] to-[#00d2ff] rounded-full shadow-[0_0_20px_rgba(0,112,209,0.4)]" />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <Layers size={18} /> All Games
-                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "all" ? "bg-white/20" : "bg-white/10"}`}>
-                  {accounts.length}
+
+          <div className="flex items-center gap-4">
+            {/* Elegant Pill Tabs */}
+            <div className="flex p-1.5 rounded-[2rem] bg-black/40 backdrop-blur-2xl border border-white/10 shadow-2xl">
+              <button
+                onClick={() => setActiveTab("all")}
+                className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "all" ? "text-white" : "text-white/40 hover:text-white/70"}`}
+              >
+                {activeTab === "all" && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#0044ff] to-[#00d2ff] rounded-full shadow-[0_0_20px_rgba(0,112,209,0.4)]" />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Layers size={18} /> All Games
+                  <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "all" ? "bg-white/20" : "bg-white/10"}`}>
+                    {accounts.length}
+                  </span>
                 </span>
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveTab("psplus")}
-              className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "psplus" ? "text-[#1a1a00]" : "text-white/40 hover:text-white/70"}`}
-            >
-              {activeTab === "psplus" && (
-                <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] to-[#FFA500] rounded-full shadow-[0_0_20px_rgba(255,215,0,0.4)]" />
-              )}
-              <span className="relative z-10 flex items-center gap-2">
-                <Crown size={18} /> PS Plus
-                <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "psplus" ? "bg-black/20" : "bg-white/10"}`}>
-                  {psPlusCount}
+              </button>
+              <button
+                onClick={() => setActiveTab("psplus")}
+                className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "psplus" ? "text-[#1a1a00]" : "text-white/40 hover:text-white/70"}`}
+              >
+                {activeTab === "psplus" && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] to-[#FFA500] rounded-full shadow-[0_0_20px_rgba(255,215,0,0.4)]" />
+                )}
+                <span className="relative z-10 flex items-center gap-2">
+                  <Crown size={18} /> PS Plus
+                  <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "psplus" ? "bg-black/20" : "bg-white/10"}`}>
+                    {psPlusCount}
+                  </span>
                 </span>
-              </span>
-            </button>
+              </button>
+            </div>
           </div>
 
-          {/* Elegant Search Bar */}
-          <div className="relative group w-full md:w-80">
-            <Search
-              size={18}
-              className="absolute left-5 top-1/2 -translate-y-1/2 text-white/40 group-focus-within:text-[#00d2ff] transition-colors"
-            />
-            <input
-              type="text"
-              placeholder="Search vault..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-6 py-3.5 rounded-full text-sm transition-all duration-300 outline-none placeholder:text-white/30 focus:border-[#00d2ff]/50 focus:bg-white/10 focus:shadow-[0_0_20px_rgba(0,112,209,0.2)] bg-black/40 backdrop-blur-2xl border border-white/5 text-white font-medium shadow-2xl"
-            />
+          <div className="relative group w-full md:w-96">
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0044ff]/20 to-[#00d2ff]/20 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
+            <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full overflow-hidden shadow-2xl transition-all duration-300 group-focus-within:border-[#00d2ff]/50 group-focus-within:bg-black/60">
+              <Search
+                size={20}
+                className="ml-5 text-white/40 group-focus-within:text-[#00d2ff] transition-colors"
+              />
+              <input
+                type="text"
+                placeholder="Search the vault..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-4 pr-6 py-4 bg-transparent outline-none text-white font-medium placeholder:text-white/20 text-base"
+              />
+            </div>
           </div>
         </div>
 
-        {error && (
+        {accountsError && (
           <div
             className="flex items-center gap-3 p-4 rounded-xl mb-6"
             style={{
@@ -275,18 +331,11 @@ export default function DashboardPage() {
             }}
           >
             <AlertCircle size={20} />
-            <span className="text-sm">{error}</span>
+            <span className="text-sm">{accountsError}</span>
           </div>
         )}
 
-        {loading && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
-          </div>
-        )}
-
+        {/* ── Main Feed ── */}
         {!loading && filteredAccounts.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {filteredAccounts.map((account, i) => (
@@ -295,33 +344,100 @@ export default function DashboardPage() {
                 account={account} 
                 index={i} 
                 provider={providers.find((p) => p.id === account.providerId)}
+                isAdmin={isAdmin}
+                onEdit={(acc) => openAccountModal(acc)}
+                onDelete={handleDeleteAccount}
               />
             ))}
           </div>
         )}
 
         {!loading && filteredAccounts.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-24">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center mb-6"
-              style={{ background: "var(--color-ps-bg-secondary)", border: "1px solid var(--color-ps-border)" }}
-            >
-              {activeTab === "psplus" ? (
-                <Crown size={36} style={{ color: "var(--color-ps-text-muted)" }} />
-              ) : (
-                <Gamepad2 size={36} style={{ color: "var(--color-ps-text-muted)" }} />
-              )}
+          <div className="relative min-h-[400px] flex flex-col items-center justify-center rounded-[2.5rem] border border-white/5 bg-zinc-900/10 backdrop-blur-sm p-12 text-center group">
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-[#00d2ff] blur-[60px] opacity-5" />
+              <div className="w-24 h-24 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
+                {activeTab === "psplus" ? (
+                  <Crown size={40} className="text-[#FFD700] opacity-50" />
+                ) : (
+                  <Gamepad2 size={40} className="text-white/20" />
+                )}
+              </div>
             </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: "var(--color-ps-text-secondary)" }}>
-              {searchQuery ? "No results found" : activeTab === "psplus" ? "No PS Plus accounts" : "No accounts yet"}
+
+            <h3 className="text-2xl font-black text-white/90 mb-3 tracking-tight uppercase">
+              {searchQuery ? "No Matches" : "Vault Offline"}
             </h3>
-            <p className="text-sm" style={{ color: "var(--color-ps-text-muted)" }}>
-              {searchQuery ? "Try a different search term." : "Add accounts from the admin panel to get started."}
+            <p className="text-white/30 max-w-xs mx-auto text-xs font-bold uppercase tracking-[0.2em] leading-relaxed mb-10">
+              {searchQuery
+                ? `No records found for "${searchQuery}"`
+                : "Start adding games to your collection."}
             </p>
+
+            {/* Dialog button removed from empty state */}
           </div>
         )}
       </main>
 
+      {/* ── Fixed FAB for Admin with Menu ── */}
+      {isAdmin && (
+        <div className="fixed bottom-8 right-8 z-[60] flex flex-col items-end gap-4">
+          {isFabMenuOpen && (
+            <div 
+              id="fab-menu"
+              className="absolute bottom-24 right-0 mb-4 bg-black/60 backdrop-blur-3xl border border-white/10 p-3 rounded-[2.5rem] flex flex-col gap-2 min-w-[240px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] animate-fadeInUp"
+            >
+              <button
+                onClick={() => {
+                  openAccountModal();
+                  setIsFabMenuOpen(false);
+                }}
+                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-[#0066ff] transition-all duration-300 group shadow-lg"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-black/20 shadow-lg border border-white/10 group-hover:border-black/10">
+                  <Gamepad2 size={20} className="text-[#0099ff] group-hover:text-white transition-colors" />
+                </div>
+                <span>New Game</span>
+              </button>
+              <Link
+                href="/providers"
+                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-[#0066ff] transition-all duration-300 group shadow-lg"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-black/20 shadow-lg border border-white/10 group-hover:border-black/10">
+                  <Database size={20} className="text-[#0099ff] group-hover:text-white transition-colors" />
+                </div>
+                <span>Manage Providers</span>
+              </Link>
+            </div>
+          )}
+          
+          <button
+            id="fab-button"
+            onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
+            className={`group relative w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-500 shadow-[0_20px_50px_rgba(0,102,255,0.4)] hover:scale-110 active:scale-95 ${isFabMenuOpen ? "rotate-[135deg]" : ""}`}
+            title="Access Vault Control"
+          >
+            <div className="absolute inset-0 rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] animate-pulse opacity-40 blur-xl" />
+            <div className="absolute -inset-[1px] rounded-[1.5rem] bg-gradient-to-br from-[#0044ff] to-[#0099ff] z-0 opacity-90 shadow-[0_0_30px_rgba(0,102,255,0.5)]" />
+            <div className="absolute inset-[2.5px] rounded-[1.35rem] bg-[#050505] z-10" />
+            <Plus size={32} className="text-white relative z-20 transition-transform duration-500 drop-shadow-[0_0_8px_rgba(0,102,255,0.8)]" />
+          </button>
+        </div>
+      )}
+
+      {isAdmin && (
+        <>
+          <AccountModal
+            isOpen={isAccountModalOpen}
+            onClose={closeAccountModal}
+            initialEditAccount={editAccount}
+          />
+          <ProviderModal
+            isOpen={isProviderModalOpen}
+            onClose={closeProviderModal}
+          />
+        </>
+      )}
     </div>
   );
 }
