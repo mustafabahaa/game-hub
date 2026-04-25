@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useRef } from "react";
+import Image from "next/image";
 import { Account } from "@/types/account";
 import { Provider } from "@/types/provider";
-import { Eye, Copy, Check, ExternalLink, KeyRound, Shield, Crown, MessageCircle, Link as LinkIcon, Info, Pencil, Trash2, Monitor, Gamepad2, Smartphone } from "lucide-react";
+import { Eye, Copy, Check, ExternalLink, KeyRound, Shield, Crown, MessageCircle, Link as LinkIcon, Info, Pencil, Trash2, Monitor, Gamepad2 } from "lucide-react";
 
 interface GameCardProps {
   account: Account;
@@ -82,12 +83,13 @@ export default function GameCard({ account, provider, index, isAdmin, onEdit, on
         {!isImageLoaded && (
           <div className="absolute inset-0 skeleton z-10" />
         )}
-        <img
+        <Image
           src={account.imageUrl}
           alt={account.gameTitle}
           onLoad={() => setIsImageLoaded(true)}
-          className={`w-full h-full object-cover transition-all duration-1000 ${isImageLoaded ? "scale-100 blur-0 opacity-100" : "scale-110 blur-2xl opacity-0"} group-hover:scale-110 group-hover:rotate-1`}
-          loading="lazy"
+          fill
+          unoptimized
+          className={`object-cover transition-all duration-1000 ${isImageLoaded ? "scale-100 blur-0 opacity-100" : "scale-110 blur-2xl opacity-0"} group-hover:scale-110 group-hover:rotate-1`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/40 to-transparent opacity-90" />
 

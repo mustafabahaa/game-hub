@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, FormEvent, useEffect, useRef } from "react";
-import { useProvidersContext } from "@/context/ProvidersContext";
+import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { Provider, ProviderFormData } from "@/types/provider";
 import { supabase } from "@/lib/supabase";
 import Aurora from "@/components/Aurora";
@@ -9,8 +9,8 @@ import {
   Plus,
   X,
   Loader2,
-  AlertCircle,
-  CheckCircle,
+  CircleAlert,
+  CircleCheckBig,
   Users,
   Save,
   Image as ImageIcon,
@@ -72,7 +72,7 @@ export default function ProviderModal({
     }
   };
 
-  const handleProviderSubmit = async (e: FormEvent) => {
+  const handleProviderSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!providerForm.name) return showToast("Provider name is required", "error");
 
@@ -158,7 +158,7 @@ export default function ProviderModal({
         <div className="relative z-10 flex-1 overflow-y-auto p-8 lg:p-10 custom-scrollbar">
           {toast && (
             <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-bold text-sm flex items-center gap-3 animate-fadeInUp shadow-2xl border ${toast.type === "success" ? "bg-[#0066ff] border-white/20 text-white" : "bg-red-500 border-white/20 text-white"}`}>
-              {toast.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+              {toast.type === "success" ? <CircleCheckBig size={20} /> : <CircleAlert size={20} />}
               {toast.message}
             </div>
           )}
@@ -173,7 +173,13 @@ export default function ProviderModal({
                   className="aspect-square rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 hover:border-[#0099ff]/50 transition-all cursor-pointer group overflow-hidden relative"
                 >
                   {preview ? (
-                    <img src={preview} alt="Preview" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                    <Image 
+                      src={preview} 
+                      alt="Preview" 
+                      fill
+                      unoptimized
+                      className="object-cover group-hover:scale-110 transition-transform duration-700" 
+                    />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center text-white/10 group-hover:text-[#0099ff]/50 transition-colors">

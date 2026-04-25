@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode, useCallback } from "react";
 import { supabase } from "@/lib/supabase";
 import { Provider } from "@/types/provider";
 
@@ -18,7 +18,7 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProviders = async () => {
+  const fetchProviders = useCallback(async () => {
     const { data, error: fetchError } = await supabase
       .from("providers")
       .select("*")
@@ -43,10 +43,12 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
       );
     }
     setLoading(false);
-  };
+  }, []);
 
   useEffect(() => {
-    fetchProviders();
+    void (async () => {
+      await fetchProviders();
+    })();
 
     const channel = supabase
       .channel("global-providers-realtime")
@@ -62,7 +64,7 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchProviders]);
 
   return (
     <ProvidersContext.Provider value={{ providers, loading, error, refetch: fetchProviders }}>

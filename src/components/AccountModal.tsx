@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, FormEvent, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
+import Image from "next/image";
 import { useProvidersContext } from "@/context/ProvidersContext";
 import { Account, AccountFormData, AccountType, Platform } from "@/types/account";
 import { supabase } from "@/lib/supabase";
@@ -10,13 +11,12 @@ import {
   Image as ImageIcon,
   X,
   Loader2,
-  Crown,
   Shield,
-  Upload,
-  AlertCircle,
-  CheckCircle,
+  CircleAlert,
+  CircleCheckBig,
   Monitor,
   Gamepad,
+  Upload,
 } from "lucide-react";
 
 const EMPTY_ACCOUNT_FORM: AccountFormData = {
@@ -96,7 +96,7 @@ export default function AccountModal({
     if (fileRef.current) fileRef.current.value = "";
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.SyntheticEvent) => {
     e.preventDefault();
     if (!form.gameTitle || !form.email) return showToast("Game title and email are required", "error");
     if (!editingId && !form.imageFile) return showToast("Game poster is required", "error");
@@ -174,7 +174,7 @@ export default function AccountModal({
         <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-10">
           {toast && (
             <div className={`fixed top-10 right-10 z-[110] px-6 py-4 rounded-2xl font-bold text-sm flex items-center gap-3 animate-fadeInUp shadow-2xl border ${toast.type === "success" ? "bg-[#00d2ff] border-white/20 text-black" : "bg-red-500 border-white/20 text-white"}`}>
-              {toast.type === "success" ? <CheckCircle size={20} /> : <AlertCircle size={20} />}
+              {toast.type === "success" ? <CircleCheckBig size={20} /> : <CircleAlert size={20} />}
               {toast.message}
             </div>
           )}
@@ -188,7 +188,13 @@ export default function AccountModal({
                   className="aspect-[3/4] rounded-[2rem] bg-white/5 border-2 border-dashed border-white/10 hover:border-[#00d2ff]/50 transition-all cursor-pointer group overflow-hidden relative shadow-2xl"
                 >
                   {preview ? (
-                    <img src={preview} alt="Preview" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                    <Image 
+                      src={preview} 
+                      alt="Preview" 
+                      fill
+                      unoptimized
+                      className="object-cover group-hover:scale-105 transition-transform duration-700" 
+                    />
                   ) : (
                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
                       <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center text-white/10 group-hover:text-[#00d2ff]/50 transition-colors">

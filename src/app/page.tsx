@@ -17,19 +17,18 @@ import {
   Crown,
   Search,
   Layers,
-  AlertCircle,
-  Settings,
+  CircleAlert,
   LogOut,
   Loader2,
   Plus,
-  Users,
   Database,
   Shield,
   Monitor,
 } from "lucide-react";
 import Link from "next/link";
 
-type Tab = "all" | "psplus";
+// Types for filtering and state management
+// Moved inline to activeFilter state if needed or kept if useful elsewhere
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -44,20 +43,17 @@ export default function DashboardPage() {
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState<Account | null>(null);
-  const [initialAccountData, setInitialAccountData] = useState<any | null>(null);
+  const [initialAccountData, setInitialAccountData] = useState<Partial<Account> | null>(null);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
-  const openAccountModal = (account?: Account, data?: any) => {
+  const openAccountModal = (account?: Account, data?: Partial<Account>) => {
     setEditingAccount(account || null);
     setInitialAccountData(data || null);
     setIsAccountModalOpen(true);
     setIsFabMenuOpen(false);
   };
 
-  const openProviderModal = () => {
-    setIsProviderModalOpen(true);
-    setIsFabMenuOpen(false);
-  };
+
 
   const closeAccountModal = () => {
     setIsAccountModalOpen(false);
@@ -127,7 +123,7 @@ export default function DashboardPage() {
     if (activeFilter !== "all") {
       result = result.filter((a) => a.platform === activeFilter);
     }
-    
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -139,10 +135,7 @@ export default function DashboardPage() {
     return result;
   }, [accounts, activeFilter, searchQuery]);
 
-  const psPlusCount = useMemo(
-    () => accounts.filter((a) => a.isPsPlus).length,
-    [accounts]
-  );
+
 
   const profileRef = useRef<HTMLDivElement>(null);
 
@@ -208,7 +201,7 @@ export default function DashboardPage() {
               </div>
 
               {isAdmin && (
-                <Link 
+                <Link
                   href="/providers"
                   className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
                 >
@@ -272,8 +265,8 @@ export default function DashboardPage() {
         {/* Tabs + Search + Add Button */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
           <div className="flex items-center gap-4">
-            {/* Unified Filter Bar */}
-            <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-3xl shadow-2xl">
+            {/* Unified Filter Bar - Matching Search Bar Style */}
+            <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full p-1 shadow-2xl transition-all duration-300">
               {[
                 { id: "all", label: "All", icon: Layers },
                 { id: "PlayStation", label: "PS", icon: Gamepad2, activeColor: "text-[#00d2ff]" },
@@ -283,7 +276,7 @@ export default function DashboardPage() {
                 <button
                   key={p.id}
                   onClick={() => setActiveFilter(p.id)}
-                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/20 hover:text-white/40 hover:bg-white/5"}`}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/20 hover:text-white/40 hover:bg-white/5"}`}
                 >
                   <p.icon size={14} className={activeFilter === p.id ? (p.activeColor || "text-[#00d2ff]") : "transition-colors group-hover:text-white/40"} />
                   {p.label}
@@ -319,7 +312,7 @@ export default function DashboardPage() {
               color: "var(--color-ps-danger)",
             }}
           >
-            <AlertCircle size={20} />
+            <CircleAlert size={20} />
             <span className="text-sm">{accountsError}</span>
           </div>
         )}
@@ -328,10 +321,10 @@ export default function DashboardPage() {
         {!loading && filteredAccounts.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
             {filteredAccounts.map((account, i) => (
-              <GameCard 
-                key={account.id} 
-                account={account} 
-                index={i} 
+              <GameCard
+                key={account.id}
+                account={account}
+                index={i}
                 provider={providers.find((p) => p.id === account.providerId)}
                 isAdmin={isAdmin}
                 onEdit={(acc) => openAccountModal(acc)}
@@ -346,7 +339,7 @@ export default function DashboardPage() {
             <div className="relative mb-8">
               <div className="absolute inset-0 bg-[#00d2ff] blur-[60px] opacity-5" />
               <div className="w-24 h-24 rounded-3xl bg-white/5 border border-white/5 flex items-center justify-center transition-transform duration-500 group-hover:scale-110">
-                {activeTab === "psplus" ? (
+                {activeFilter === "psplus" ? (
                   <Crown size={40} className="text-[#FFD700] opacity-50" />
                 ) : (
                   <Gamepad2 size={40} className="text-white/20" />
@@ -370,7 +363,7 @@ export default function DashboardPage() {
       {isAdmin && (
         <div className="fixed bottom-8 right-8 z-[60] flex flex-col items-end gap-4">
           {isFabMenuOpen && (
-            <div 
+            <div
               id="fab-menu"
               className="absolute bottom-24 right-0 mb-4 bg-black/60 backdrop-blur-3xl border border-white/10 p-3 rounded-[2.5rem] flex flex-col gap-2 min-w-[240px] shadow-[0_40px_100px_rgba(0,0,0,0.8)] animate-fadeInUp"
             >
@@ -408,7 +401,7 @@ export default function DashboardPage() {
               </Link>
             </div>
           )}
-          
+
           <button
             id="fab-button"
             onClick={() => setIsFabMenuOpen(!isFabMenuOpen)}
