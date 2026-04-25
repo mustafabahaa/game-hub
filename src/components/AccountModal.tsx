@@ -10,10 +10,8 @@ import {
   Save,
   X,
   Loader2,
-  Shield,
   CircleAlert,
   CircleCheckBig,
-  Monitor,
   Gamepad2,
   Crown,
   Infinity,
@@ -198,9 +196,9 @@ export default function AccountModal({
                 <label className="block text-xs font-black text-white/40 uppercase tracking-widest mb-5 ml-1">Select Platform</label>
                 <div className="grid grid-cols-3 gap-3">
                   {[
-                    { id: "PlayStation", icon: Gamepad2 },
-                    { id: "Xbox", icon: Shield },
-                    { id: "PC", icon: Monitor }
+                    { id: "PlayStation" },
+                    { id: "Xbox" },
+                    { id: "PC" }
                   ].map((p) => (
                     <button
                       key={p.id}
@@ -208,7 +206,6 @@ export default function AccountModal({
                       onClick={() => setForm(f => ({ ...f, platform: p.id as Platform }))}
                       className={`flex flex-col items-center justify-center gap-2 rounded-2xl border px-2 py-5 transition-all duration-500 ${form.platform === p.id ? "border-white/30 bg-linear-to-br from-ps-accent-start to-ps-accent-blue-light text-white shadow-lg" : "border-white/5 bg-white/5 text-white/20 hover:border-white/10"}`}
                     >
-                      <p.icon size={22} />
                       <span className="text-[9px] font-black uppercase tracking-tight text-center">{p.id}</span>
                     </button>
                   ))}

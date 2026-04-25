@@ -17,14 +17,13 @@ import {
   Gamepad2,
   Crown,
   Search,
-  Layers,
   CircleAlert,
   LogOut,
   Loader2,
   Plus,
   Database,
-  Shield,
-  Monitor,
+  ArrowDown,
+  ArrowUp,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -115,6 +114,7 @@ export default function DashboardPage() {
   const loading = accountsLoading || providersLoading || authLoading;
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
   const filteredAccounts = useMemo(() => {
     let result = accounts;
@@ -131,8 +131,13 @@ export default function DashboardPage() {
           (a.games && a.games.some(g => g.title.toLowerCase().includes(q)))
       );
     }
-    return result;
-  }, [accounts, activeFilter, searchQuery]);
+
+    return [...result].sort((a, b) =>
+      sortOrder === "newest"
+        ? b.createdAt - a.createdAt
+        : a.createdAt - b.createdAt
+    );
+  }, [accounts, activeFilter, searchQuery, sortOrder]);
 
 
 
@@ -258,43 +263,60 @@ export default function DashboardPage() {
       {/* ── Main ── */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 relative z-20">
 
-        {/* Tabs + Search + Add Button */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-          <div className="flex items-center gap-4">
-            {/* Unified Filter Bar - Matching Search Bar Style */}
-            <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full p-1 shadow-2xl transition-all duration-300">
+        {/* Search + Filters */}
+        <div className="flex flex-col gap-6 mb-12">
+          <div className="relative w-full">
+            <div className="relative flex items-center gap-3 rounded-[2rem] p-5">
+              <Search
+                size={22}
+                className="text-white/40"
+              />
+              <input
+                type="text"
+                placeholder="Search accounts, email, or games..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 bg-transparent outline-none focus:outline-none focus-visible:outline-none ring-0 text-white font-semibold placeholder:text-white/30 text-2xl"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="relative flex flex-wrap items-center gap-3 bg-black/30 backdrop-blur-3xl border border-white/10 rounded-[2rem] p-2 shadow-[0_30px_80px_rgba(0,0,0,0.25)]">
               {[
-                { id: "all", label: "All", icon: Layers },
-                { id: "PlayStation", label: "PS", icon: Gamepad2, activeColor: "text-[#00d2ff]" },
-                { id: "Xbox", label: "Xbox", icon: Shield, activeColor: "text-[#107c10]" },
-                { id: "PC", label: "PC", icon: Monitor, activeColor: "text-[#0099ff]" }
+                { id: "all", label: "All" },
+                { id: "PlayStation", label: "PS" },
+                { id: "Xbox", label: "Xbox" },
+                { id: "PC", label: "PC" }
               ].map((p) => (
                 <button
                   key={p.id}
                   onClick={() => setActiveFilter(p.id)}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase tracking-widest transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/20 hover:text-white/40 hover:bg-white/5"}`}
+                  className={`flex items-center gap-2 px-5 py-3 rounded-full text-[10px] font-black uppercase tracking-[0.22em] transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/30 hover:text-white/70 hover:bg-white/5"}`}
                 >
-                  <p.icon size={14} className={activeFilter === p.id ? (p.activeColor || "text-ps-accent-end") : "transition-colors group-hover:text-white/40"} />
                   {p.label}
                 </button>
               ))}
             </div>
-          </div>
 
-          <div className="relative group w-full md:w-96">
-            <div className="absolute inset-0 bg-linear-to-r from-ps-accent-start/20 to-ps-accent-end/20 rounded-full blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500" />
-            <div className="relative flex items-center bg-black/40 backdrop-blur-2xl border border-white/10 rounded-full overflow-hidden shadow-2xl transition-all duration-300 group-focus-within:border-ps-accent-end/50 group-focus-within:bg-black/60">
-              <Search
-                size={20}
-                className="ml-5 text-white/40 group-focus-within:text-ps-accent-end transition-colors"
-              />
-              <input
-                type="text"
-                placeholder="Search accounts or games..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-4 pr-6 py-4 bg-transparent outline-none text-white font-medium placeholder:text-white/20 text-base"
-              />
+            <div className="flex items-center gap-2 rounded-full bg-black/40 border border-white/10 px-3 py-2 shadow-2xl text-white/60">
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Sort</span>
+              <button
+                type="button"
+                onClick={() => setSortOrder("newest")}
+                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold uppercase transition-all duration-300 ${sortOrder === "newest" ? "bg-white/10 text-white shadow-xl" : "text-white/30 hover:text-white hover:bg-white/5"}`}
+              >
+                <ArrowDown size={14} />
+                Newest
+              </button>
+              <button
+                type="button"
+                onClick={() => setSortOrder("oldest")}
+                className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold uppercase transition-all duration-300 ${sortOrder === "oldest" ? "bg-white/10 text-white shadow-xl" : "text-white/30 hover:text-white hover:bg-white/5"}`}
+              >
+                <ArrowUp size={14} />
+                Oldest
+              </button>
             </div>
           </div>
         </div>
