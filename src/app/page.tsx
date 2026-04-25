@@ -24,6 +24,8 @@ import {
   Plus,
   Users,
   Database,
+  Shield,
+  Monitor,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -41,11 +43,13 @@ export default function DashboardPage() {
 
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
   const [isProviderModalOpen, setIsProviderModalOpen] = useState(false);
-  const [editAccount, setEditAccount] = useState<Account | null>(null);
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+  const [initialAccountData, setInitialAccountData] = useState<any | null>(null);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
-  const openAccountModal = (account?: Account) => {
-    setEditAccount(account || null);
+  const openAccountModal = (account?: Account, data?: any) => {
+    setEditingAccount(account || null);
+    setInitialAccountData(data || null);
     setIsAccountModalOpen(true);
     setIsFabMenuOpen(false);
   };
@@ -57,7 +61,8 @@ export default function DashboardPage() {
 
   const closeAccountModal = () => {
     setIsAccountModalOpen(false);
-    setEditAccount(null);
+    setEditingAccount(null);
+    setInitialAccountData(null);
   };
 
   const closeProviderModal = () => {
@@ -114,15 +119,15 @@ export default function DashboardPage() {
   const { accounts, loading: accountsLoading, error: accountsError } = useAccountsContext();
   const { providers, loading: providersLoading } = useProvidersContext();
   const loading = accountsLoading || providersLoading || authLoading;
-
-  const [activeTab, setActiveTab] = useState<Tab>("all");
+  const [activeFilter, setActiveFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredAccounts = useMemo(() => {
     let result = accounts;
-    if (activeTab === "psplus") {
-      result = result.filter((a) => a.isPsPlus);
+    if (activeFilter !== "all") {
+      result = result.filter((a) => a.platform === activeFilter);
     }
+    
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(
@@ -132,7 +137,7 @@ export default function DashboardPage() {
       );
     }
     return result;
-  }, [accounts, activeTab, searchQuery]);
+  }, [accounts, activeFilter, searchQuery]);
 
   const psPlusCount = useMemo(
     () => accounts.filter((a) => a.isPsPlus).length,
@@ -230,8 +235,6 @@ export default function DashboardPage() {
                     <p className="text-xs text-white/50 truncate">{userEmail}</p>
                   </div>
 
-                  {/* Dialog buttons removed from here as per user request */}
-
                   <button
                     onClick={handleSignOut}
                     className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold text-red-400 hover:bg-red-500/10 transition-colors"
@@ -268,38 +271,24 @@ export default function DashboardPage() {
 
         {/* Tabs + Search + Add Button */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-12">
-
           <div className="flex items-center gap-4">
-            {/* Elegant Pill Tabs */}
-            <div className="flex p-1.5 rounded-[2rem] bg-black/40 backdrop-blur-2xl border border-white/10 shadow-2xl">
-              <button
-                onClick={() => setActiveTab("all")}
-                className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "all" ? "text-white" : "text-white/40 hover:text-white/70"}`}
-              >
-                {activeTab === "all" && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#0044ff] to-[#00d2ff] rounded-full shadow-[0_0_20px_rgba(0,112,209,0.4)]" />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <Layers size={18} /> All Games
-                  <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "all" ? "bg-white/20" : "bg-white/10"}`}>
-                    {accounts.length}
-                  </span>
-                </span>
-              </button>
-              <button
-                onClick={() => setActiveTab("psplus")}
-                className={`relative px-6 py-3 rounded-full text-sm font-bold transition-all duration-300 overflow-hidden ${activeTab === "psplus" ? "text-[#1a1a00]" : "text-white/40 hover:text-white/70"}`}
-              >
-                {activeTab === "psplus" && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700] to-[#FFA500] rounded-full shadow-[0_0_20px_rgba(255,215,0,0.4)]" />
-                )}
-                <span className="relative z-10 flex items-center gap-2">
-                  <Crown size={18} /> PS Plus
-                  <span className={`ml-1 px-2.5 py-0.5 rounded-full text-xs ${activeTab === "psplus" ? "bg-black/20" : "bg-white/10"}`}>
-                    {psPlusCount}
-                  </span>
-                </span>
-              </button>
+            {/* Unified Filter Bar */}
+            <div className="flex bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-3xl shadow-2xl">
+              {[
+                { id: "all", label: "All", icon: Layers },
+                { id: "PlayStation", label: "PS", icon: Gamepad2, activeColor: "text-[#00d2ff]" },
+                { id: "Xbox", label: "Xbox", icon: Shield, activeColor: "text-[#107c10]" },
+                { id: "PC", label: "PC", icon: Monitor, activeColor: "text-[#0099ff]" }
+              ].map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => setActiveFilter(p.id)}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all duration-500 ${activeFilter === p.id ? "bg-white/10 text-white shadow-xl scale-105" : "text-white/20 hover:text-white/40 hover:bg-white/5"}`}
+                >
+                  <p.icon size={14} className={activeFilter === p.id ? (p.activeColor || "text-[#00d2ff]") : "transition-colors group-hover:text-white/40"} />
+                  {p.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -373,8 +362,6 @@ export default function DashboardPage() {
                 ? `No records found for "${searchQuery}"`
                 : "Start adding games to your collection."}
             </p>
-
-            {/* Dialog button removed from empty state */}
           </div>
         )}
       </main>
@@ -390,14 +377,25 @@ export default function DashboardPage() {
               <button
                 onClick={() => {
                   openAccountModal();
-                  setIsFabMenuOpen(false);
                 }}
-                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-[#0066ff] transition-all duration-300 group shadow-lg"
+                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all duration-300 group"
               >
-                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-black/20 shadow-lg border border-white/10 group-hover:border-black/10">
-                  <Gamepad2 size={20} className="text-[#0099ff] group-hover:text-white transition-colors" />
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#00d2ff]/20 shadow-lg border border-white/10 transition-all">
+                  <Gamepad2 size={20} className="text-[#0099ff] group-hover:text-[#00d2ff]" />
                 </div>
                 <span>New Game</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  openAccountModal(undefined, { isPsPlus: true, gameTitle: "PS Plus", platform: "PlayStation" });
+                }}
+                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all duration-300 group"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-[#FFD700]/20 shadow-lg border border-white/10 transition-all">
+                  <Crown size={20} className="text-[#FFD700]" />
+                </div>
+                <span>Add Plus</span>
               </button>
               <Link
                 href="/providers"
@@ -430,7 +428,8 @@ export default function DashboardPage() {
           <AccountModal
             isOpen={isAccountModalOpen}
             onClose={closeAccountModal}
-            initialEditAccount={editAccount}
+            initialEditAccount={editingAccount}
+            initialData={initialAccountData}
           />
           <ProviderModal
             isOpen={isProviderModalOpen}

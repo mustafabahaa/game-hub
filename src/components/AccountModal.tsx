@@ -35,11 +35,13 @@ const EMPTY_ACCOUNT_FORM: AccountFormData = {
 export default function AccountModal({ 
   isOpen, 
   onClose,
-  initialEditAccount 
+  initialEditAccount,
+  initialData
 }: { 
   isOpen: boolean; 
   onClose: () => void;
   initialEditAccount?: Account | null;
+  initialData?: Partial<AccountFormData> | null;
 }) {
   const { providers } = useProvidersContext();
   const [form, setForm] = useState<AccountFormData>({ ...EMPTY_ACCOUNT_FORM });
@@ -62,13 +64,17 @@ export default function AccountModal({
         platform: initialEditAccount.platform,
         isPsPlus: initialEditAccount.isPsPlus,
         imageFile: null,
-        imageUrl: initialEditAccount.imageUrl,
+        imageUrl: initialEditAccount.imageUrl || "",
       });
-      setPreview(initialEditAccount.imageUrl);
+      setPreview(initialEditAccount.imageUrl || null);
+    } else if (initialData) {
+      setEditingId(null);
+      setForm({ ...EMPTY_ACCOUNT_FORM, ...initialData });
+      setPreview(null);
     } else {
       resetForm();
     }
-  }, [initialEditAccount, isOpen]);
+  }, [initialEditAccount, initialData, isOpen]);
 
   const showToast = (message: string, type: "success" | "error") => {
     setToast({ message, type });
@@ -114,7 +120,7 @@ export default function AccountModal({
         provider_id: form.providerId || null,
         account_type: form.platform === "PlayStation" ? form.accountType : null,
         platform: form.platform,
-        is_ps_plus: false,
+        is_ps_plus: form.gameTitle.toLowerCase().includes("plus"),
         image_url: imageUrl,
         updated_at: new Date().toISOString(),
       };
