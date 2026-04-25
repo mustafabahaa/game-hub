@@ -417,7 +417,6 @@ export default function DashboardPage() {
             onClose={closeProviderModal}
           />
         </>
-      )}
     </div>
   );
 }
