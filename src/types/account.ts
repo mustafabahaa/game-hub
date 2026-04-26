@@ -23,6 +23,9 @@ export interface Account {
   lifecycleType: LifecycleType;
   expiresOn?: string;
   games?: Game[];
+  canViewPassword?: boolean;
+  canViewOtp?: boolean;
+  sharedByName?: string;
   createdAt: number;
   updatedAt: number;
 }

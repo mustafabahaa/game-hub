@@ -18,6 +18,8 @@ interface AccountCardProps {
 export default function AccountCard({ account, provider, index, onEdit, onDelete, onViewDetails }: AccountCardProps) {
   const [showCredentials, setShowCredentials] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
+  const canViewPassword = account.canViewPassword ?? true;
+  const canViewOtp = account.canViewOtp ?? true;
 
   const divRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -169,40 +171,46 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
           )}
         </div>
 
-        <div className="
-          absolute top-4 right-4 z-20 flex gap-2 opacity-0 transition-opacity
-          duration-300
-          group-hover:opacity-100
-        ">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit?.(account);
-              }}
-              className="
-                flex size-8 items-center justify-center rounded-full border
-                border-white/20 bg-black/60 text-white backdrop-blur-md
-                transition-colors
-                hover:bg-ps-accent-end/40 hover:text-ps-accent-end
-              "
-            >
-              <Pencil size={14} />
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete?.(account.id);
-              }}
-              className="
-                flex size-8 items-center justify-center rounded-full border
-                border-white/20 bg-black/60 text-white backdrop-blur-md
-                transition-colors
-                hover:bg-red-500/40 hover:text-red-400
-              "
-            >
-              <Trash2 size={14} />
-            </button>
-          </div>
+        {(onEdit || onDelete) && (
+          <div className="
+            absolute top-4 right-4 z-20 flex gap-2 opacity-0 transition-opacity
+            duration-300
+            group-hover:opacity-100
+          ">
+              {onEdit && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEdit(account);
+                  }}
+                  className="
+                    flex size-8 items-center justify-center rounded-full border
+                    border-white/20 bg-black/60 text-white backdrop-blur-md
+                    transition-colors
+                    hover:bg-ps-accent-end/40 hover:text-ps-accent-end
+                  "
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
+              {onDelete && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(account.id);
+                  }}
+                  className="
+                    flex size-8 items-center justify-center rounded-full border
+                    border-white/20 bg-black/60 text-white backdrop-blur-md
+                    transition-colors
+                    hover:bg-red-500/40 hover:text-red-400
+                  "
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
+            </div>
+        )}
 
         <div className="
           absolute inset-x-0 bottom-0 transform p-5 transition-transform
@@ -296,7 +304,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
               onCopy={handleCopy}
             />
 
-            {account.password ? (
+            {account.password && canViewPassword ? (
               <CredentialRow
                 label="Password"
                 value={account.password}
@@ -305,6 +313,14 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                 onCopy={handleCopy}
                 isSecret
               />
+            ) : account.password && !canViewPassword ? (
+              <div
+                className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                <Info size={14} style={{ color: "var(--color-ps-text-muted)" }} />
+                <span style={{ color: "var(--color-ps-text-muted)" }}>Password hidden by owner</span>
+              </div>
             ) : (
               <div
                 className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
@@ -315,7 +331,7 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
               </div>
             )}
 
-            {account.otpSecret && (
+            {account.otpSecret && canViewOtp && (
               <CredentialRow
                 label="OTP Secret"
                 value={account.otpSecret}
@@ -324,6 +340,15 @@ export default function AccountCard({ account, provider, index, onEdit, onDelete
                 onCopy={handleCopy}
                 isSecret
               />
+            )}
+            {account.otpSecret && !canViewOtp && (
+              <div
+                className="flex items-center gap-2 rounded-lg border px-3 py-2 text-xs"
+                style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.15)" }}
+              >
+                <Info size={14} style={{ color: "var(--color-ps-text-muted)" }} />
+                <span style={{ color: "var(--color-ps-text-muted)" }}>OTP secret hidden by owner</span>
+              </div>
             )}
 
             {/* Provider Links */}

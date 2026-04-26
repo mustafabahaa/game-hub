@@ -26,6 +26,7 @@ import {
   Database,
   ArrowDown,
   ArrowUp,
+  Users,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -52,6 +53,7 @@ export default function DashboardPage() {
   const [accountToDeleteId, setAccountToDeleteId] = useState<string | null>(null);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [deleteErrorToast, setDeleteErrorToast] = useState<string | null>(null);
+  const [sharedAccounts, setSharedAccounts] = useState<Account[]>([]);
 
   const openAccountModal = (account?: Account, data?: Partial<Account>) => {
     setEditingAccount(account || null);
@@ -90,6 +92,85 @@ export default function DashboardPage() {
     if (error) {
       console.warn("Unable to upsert public profile:", error.message);
     }
+  };
+
+  const fetchSharedAccounts = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("account_shares")
+      .select("can_view_password, can_view_otp, accounts:account_id(*, games(*))")
+      .eq("recipient_id", userId)
+      .order("created_at", { ascending: false });
+    if (error) {
+      console.warn("Failed to load shared accounts:", error.message);
+      setSharedAccounts([]);
+      return;
+    }
+
+    const mapped = ((data || []) as Array<{
+      can_view_password: boolean;
+      can_view_otp: boolean;
+      accounts: {
+        id: string;
+        account_name: string;
+        email: string;
+        password?: string;
+        otp_secret?: string;
+        provider_id?: string;
+        account_type?: "Primary" | "Secondary" | "Full";
+        platform: "PlayStation" | "Xbox" | "PC";
+        is_ps_plus: boolean;
+        lifecycle_type: "lifetime" | "expires_on";
+        expires_on?: string | null;
+        created_at: string;
+        updated_at: string;
+        games?: Array<{ id: string; account_id: string; title: string; image_url: string; created_at: string }>;
+      } | Array<{
+        id: string;
+        account_name: string;
+        email: string;
+        password?: string;
+        otp_secret?: string;
+        provider_id?: string;
+        account_type?: "Primary" | "Secondary" | "Full";
+        platform: "PlayStation" | "Xbox" | "PC";
+        is_ps_plus: boolean;
+        lifecycle_type: "lifetime" | "expires_on";
+        expires_on?: string | null;
+        created_at: string;
+        updated_at: string;
+        games?: Array<{ id: string; account_id: string; title: string; image_url: string; created_at: string }>;
+      }>;
+    }>)
+      .map((row) => {
+        const accountRow = Array.isArray(row.accounts) ? row.accounts[0] : row.accounts;
+        if (!accountRow) return null;
+        return {
+          id: String(accountRow.id),
+          accountName: accountRow.account_name,
+          email: accountRow.email,
+          password: accountRow.password || undefined,
+          otpSecret: accountRow.otp_secret || undefined,
+          providerId: accountRow.provider_id || undefined,
+          accountType: accountRow.account_type,
+          platform: accountRow.platform,
+          isPsPlus: accountRow.is_ps_plus,
+          lifecycleType: accountRow.lifecycle_type,
+          expiresOn: accountRow.expires_on || undefined,
+          games: (accountRow.games || []).map((g) => ({
+            id: String(g.id),
+            accountId: String(g.account_id),
+            title: g.title,
+            imageUrl: g.image_url,
+            createdAt: new Date(g.created_at).getTime(),
+          })),
+          canViewPassword: row.can_view_password,
+          canViewOtp: row.can_view_otp,
+          createdAt: new Date(accountRow.created_at).getTime(),
+          updatedAt: new Date(accountRow.updated_at).getTime(),
+        };
+      })
+      .filter(Boolean) as Account[];
+    setSharedAccounts(mapped);
   };
 
   const handleDeleteAccount = (id: string) => {
@@ -131,6 +212,7 @@ export default function DashboardPage() {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
+        setSharedAccounts([]);
         router.replace("/login");
       } else {
         setIsAuthenticated(true);
@@ -138,19 +220,24 @@ export default function DashboardPage() {
         const resolvedName = session.user.user_metadata?.full_name || "Player";
         setUserName(resolvedName);
         await ensurePublicProfile(session.user.id, resolvedName);
+        await fetchSharedAccounts(session.user.id);
       }
       setAuthLoading(false);
     };
     checkAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!session) {
-        router.replace("/login");
-      } else {
-        setIsAuthenticated(true);
-        setUserEmail(session.user.email || "");
-        setUserName(session.user.user_metadata?.full_name || "Player");
-      }
+      void (async () => {
+        if (!session) {
+          setSharedAccounts([]);
+          router.replace("/login");
+        } else {
+          setIsAuthenticated(true);
+          setUserEmail(session.user.email || "");
+          setUserName(session.user.user_metadata?.full_name || "Player");
+          await fetchSharedAccounts(session.user.id);
+        }
+      })();
     });
 
     return () => subscription.unsubscribe();
@@ -256,6 +343,13 @@ export default function DashboardPage() {
                 >
                   <Gamepad2 size={14} className="text-ps-accent-blue-light" />
                   Community
+                </Link>
+                <Link
+                  href="/friends"
+                  className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Users size={14} className="text-ps-accent-blue-light" />
+                  Friends
                 </Link>
                 <Link
                   href="/providers"
@@ -406,6 +500,23 @@ export default function DashboardPage() {
           </div>
         )}
 
+        {!loading && sharedAccounts.length > 0 && (
+          <div className="mt-14">
+            <h3 className="mb-4 text-xs font-black uppercase tracking-[0.24em] text-white/45">Shared With Me</h3>
+            <div className="grid auto-rows-min grid-cols-2 items-start gap-4 sm:grid-cols-3 sm:gap-6 md:grid-cols-4 lg:grid-cols-5">
+              {sharedAccounts.map((account, i) => (
+                <AccountCard
+                  key={`shared-${account.id}-${i}`}
+                  account={account}
+                  index={i}
+                  provider={providers.find((p) => p.id === account.providerId)}
+                  onViewDetails={openDetailModal}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
         {!loading && filteredAccounts.length === 0 && (
           <div className="relative min-h-[400px] flex flex-col items-center justify-center rounded-[2.5rem] border border-white/5 bg-zinc-900/10 backdrop-blur-sm p-12 text-center group">
             <div className="relative mb-8">
@@ -456,6 +567,16 @@ export default function DashboardPage() {
                 <span>New Account</span>
               </button>
               
+              <Link
+                href="/friends"
+                className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-white/10 transition-all duration-300 group"
+              >
+                <div className="size-10 rounded-xl bg-white/5 flex items-center justify-center shadow-lg border border-white/10 transition-all">
+                  <Users size={20} className="text-ps-accent-blue-light" />
+                </div>
+                <span>Friends</span>
+              </Link>
+
               <Link
                 href="/providers"
                 className="flex items-center gap-4 px-5 py-4 rounded-[1.5rem] text-[10px] font-black uppercase tracking-[0.2em] text-white hover:bg-ps-accent-blue transition-all duration-300 group shadow-lg"

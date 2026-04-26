@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useProvidersContext } from "@/context/ProvidersContext";
 import { Provider } from "@/types/provider";
 import ProviderModal from "@/components/ProviderModal";
@@ -17,8 +17,6 @@ import {
   ChevronLeft,
   Loader2,
   Database,
-  ArrowRight,
-  Calendar,
   Star,
   MessageSquare,
   Link as LinkIcon,
@@ -57,7 +55,7 @@ export default function ProvidersPage() {
     void loadSession();
   }, []);
 
-  const loadCommunityStats = async () => {
+  const loadCommunityStats = useCallback(async () => {
     const [{ data: ratings }, { data: posts }, { data: linkedAccounts }] = await Promise.all([
       supabase.from("provider_ratings").select("provider_id,rating,user_id"),
       supabase.from("provider_reputation_posts").select("provider_id,user_id"),
@@ -108,11 +106,11 @@ export default function ProvidersPage() {
       }
     }
     setDeleteBlockers(nextBlockers);
-  };
+  }, [providers, currentUserId]);
 
   useEffect(() => {
     void loadCommunityStats();
-  }, [providers.length, currentUserId]);
+  }, [loadCommunityStats]);
 
   const filteredProviders = useMemo(() => {
     return providers.filter((p) =>

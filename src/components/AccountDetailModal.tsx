@@ -20,7 +20,8 @@ import {
   Loader2,
   ChevronLeft,
   CircleCheckBig,
-  CircleAlert
+  CircleAlert,
+  Share2
 } from "lucide-react";
 
 interface AccountDetailModalProps {
@@ -32,6 +33,7 @@ interface AccountDetailModalProps {
 export default function AccountDetailModal({ isOpen, onClose, account }: AccountDetailModalProps) {
   const { accounts, refetch: refetchAccounts } = useAccountsContext();
   const currentAccount = account ? accounts.find((a) => a.id === account.id) || account : null;
+  const currentAccountId = currentAccount?.id;
   const [isAddingGame, setIsAddingGame] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -40,6 +42,11 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
   const [toast, setToast] = useState<{ message: string; type: "error" } | null>(null);
   const [gameToDeleteId, setGameToDeleteId] = useState<string | null>(null);
   const [deletingGame, setDeletingGame] = useState(false);
+  const [friends, setFriends] = useState<Array<{ id: string; username: string }>>([]);
+  const [selectedFriendId, setSelectedFriendId] = useState("");
+  const [canSharePassword, setCanSharePassword] = useState(true);
+  const [canShareOtp, setCanShareOtp] = useState(true);
+  const [sharingAccount, setSharingAccount] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -51,8 +58,37 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
       setToast(null);
       setGameToDeleteId(null);
       setDeletingGame(false);
+      setSelectedFriendId("");
+      setCanSharePassword(true);
+      setCanShareOtp(true);
     }
   }, [isOpen, currentAccount?.id]);
+
+  useEffect(() => {
+    if (!isOpen || !currentAccountId) return;
+    const loadFriends = async () => {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user.id;
+      if (!userId) return;
+      const { data: rels } = await supabase.from("friendships").select("friend_id").eq("user_id", userId);
+      const friendIds = (rels || []).map((r) => r.friend_id as string);
+      if (friendIds.length === 0) {
+        setFriends([]);
+        return;
+      }
+      const { data: profiles } = await supabase
+        .from("user_profiles")
+        .select("user_id,display_name,username")
+        .in("user_id", friendIds);
+      setFriends(
+        (profiles || []).map((p) => ({
+          id: p.user_id as string,
+          username: ((p.display_name as string) || (p.username as string) || "Player"),
+        }))
+      );
+    };
+    void loadFriends();
+  }, [isOpen, currentAccountId]);
 
   if (!isOpen || !currentAccount) return null;
 
@@ -144,6 +180,30 @@ if (!gameForm.title) {
       showToast("Delete Failed", "error");
     } finally {
       setDeletingGame(false);
+    }
+  };
+
+  const handleShareAccount = async () => {
+    if (!selectedFriendId) return showToast("Select a friend first", "error");
+    setSharingAccount(true);
+    try {
+      const { error } = await supabase.from("account_shares").upsert(
+        {
+          account_id: currentAccount.id,
+          recipient_id: selectedFriendId,
+          can_view_password: canSharePassword,
+          can_view_otp: canShareOtp,
+        },
+        { onConflict: "account_id,recipient_id" }
+      );
+      if (error) throw error;
+      showToast("Account shared successfully", "error");
+      setSelectedFriendId("");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to share account", "error");
+    } finally {
+      setSharingAccount(false);
     }
   };
 
@@ -329,6 +389,47 @@ if (!gameForm.title) {
                 >
                   <Plus size={16} /> Add Game
                 </button>
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
+                  <Share2 size={14} />
+                  Share Account With Friend
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+                  <select
+                    value={selectedFriendId}
+                    onChange={(e) => setSelectedFriendId(e.target.value)}
+                    className="md:col-span-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
+                  >
+                    <option value="">Select friend</option>
+                    {friends.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.username}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 text-xs text-white/70">
+                    <input type="checkbox" checked={canSharePassword} onChange={(e) => setCanSharePassword(e.target.checked)} />
+                    Password
+                  </label>
+                  <label className="flex items-center gap-2 text-xs text-white/70">
+                    <input type="checkbox" checked={canShareOtp} onChange={(e) => setCanShareOtp(e.target.checked)} />
+                    OTP
+                  </label>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleShareAccount}
+                    disabled={sharingAccount || friends.length === 0}
+                    className="rounded-xl border border-ps-accent-blue-light/40 bg-linear-to-r from-ps-accent-start to-ps-accent-blue-light px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white disabled:opacity-50"
+                  >
+                    {sharingAccount ? "Sharing..." : "Share"}
+                  </button>
+                </div>
+                {friends.length === 0 ? (
+                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/40">No friends yet. Add friends first.</p>
+                ) : null}
               </div>
 
               {currentAccount.games && currentAccount.games.length > 0 ? (

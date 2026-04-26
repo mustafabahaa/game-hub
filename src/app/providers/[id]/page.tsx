@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import Aurora from "@/components/Aurora";
@@ -57,7 +57,7 @@ export default function ProviderDetailsPage() {
   const [repBody, setRepBody] = useState("");
   const [repLink, setRepLink] = useState("");
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!providerId) return;
     setLoading(true);
     setError(null);
@@ -102,11 +102,11 @@ export default function ProviderDetailsPage() {
     }
 
     setLoading(false);
-  };
+  }, [providerId]);
 
   useEffect(() => {
     void load();
-  }, [providerId]);
+  }, [load]);
 
   const ratingSummary = useMemo(() => {
     if (ratings.length === 0) return { avg: 0, count: 0 };
@@ -272,7 +272,7 @@ export default function ProviderDetailsPage() {
                       {authorNames[p.user_id] || "Player"} - {formatDate(p.created_at)}
                     </p>
                   </div>
-                  {p.body ? <p className="text-sm text-white/75 leading-relaxed">{p.body}</p> : null}
+                  {p.body ? <p className="text-sm/relaxed text-white/75">{p.body}</p> : null}
                   {p.proof_link ? (
                     <a href={p.proof_link} target="_blank" rel="noreferrer" className="text-xs text-ps-accent-blue-light underline mt-2 inline-block">
                       Open proof link
