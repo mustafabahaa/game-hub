@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Account, GameFormData } from "@/types/account";
 import { supabase } from "@/lib/supabase";
@@ -27,22 +27,34 @@ interface AccountDetailModalProps {
 }
 
 export default function AccountDetailModal({ isOpen, onClose, account }: AccountDetailModalProps) {
-  const { refetch: refetchAccounts } = useAccountsContext();
+  const { accounts, refetch: refetchAccounts } = useAccountsContext();
+  const currentAccount = account ? accounts.find((a) => a.id === account.id) || account : null;
   const [isAddingGame, setIsAddingGame] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [gameForm, setGameForm] = useState<GameFormData>({ title: "", imageFile: null, imageUrl: "" });
   const [preview, setPreview] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "error" } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  if (!isOpen || !account) return null;
+  useEffect(() => {
+    if (isOpen) {
+      setIsAddingGame(false);
+      setSuccessMessage(null);
+      setGameForm({ title: "", imageFile: null, imageUrl: "" });
+      setPreview(null);
+      setToast(null);
+    }
+  }, [isOpen, currentAccount?.id]);
 
-  const showToast = (message: string, type: "success" | "error") => {
+  if (!isOpen || !currentAccount) return null;
+
+  const showToast = (message: string, type: "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
 
-  const PlatformIcon = account.platform === "PlayStation" ? Gamepad2 : account.platform === "Xbox" ? Shield : Monitor;
+  const PlatformIcon = currentAccount.platform === "PlayStation" ? Gamepad2 : currentAccount.platform === "Xbox" ? Shield : Monitor;
 
   const handleFileChange = (file: File | null) => {
     if (!file) return;
@@ -54,19 +66,25 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
 
   const handleAddGame = async (e: React.SyntheticEvent) => {
     e.preventDefault();
-    if (!gameForm.title || !gameForm.imageFile) return;
+if (!gameForm.title) {
+        showToast("Game title is required", "error");
+        return;
+      }
 
     setSubmitting(true);
     try {
-      const fileExt = gameForm.imageFile.name.split(".").pop();
-      const filePath = `games/${Date.now()}.${fileExt}`;
-      const { error: uploadError } = await supabase.storage.from("game-images").upload(filePath, gameForm.imageFile);
-      if (uploadError) throw uploadError;
+      let imageUrl: string | null = null;
+      if (gameForm.imageFile) {
+        const fileExt = gameForm.imageFile.name.split(".").pop();
+        const filePath = `games/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage.from("game-images").upload(filePath, gameForm.imageFile);
+        if (uploadError) throw uploadError;
 
-      const imageUrl = supabase.storage.from("game-images").getPublicUrl(filePath).data.publicUrl;
+        imageUrl = supabase.storage.from("game-images").getPublicUrl(filePath).data.publicUrl;
+      }
 
       const { error: dbError } = await supabase.from("games").insert({
-        account_id: account.id,
+        account_id: currentAccount.id,
         title: gameForm.title,
         image_url: imageUrl
       });
@@ -76,12 +94,13 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
       // Update local context
       await refetchAccounts();
 
-      showToast("Game Added to Vault", "success");
+      setSuccessMessage("Game Added to Vault");
       setTimeout(() => {
+        setSuccessMessage(null);
         setIsAddingGame(false);
         setGameForm({ title: "", imageFile: null, imageUrl: "" });
         setPreview(null);
-      }, 1000);
+      }, 1500);
     } catch (err) {
       console.error("Error adding game:", err);
       showToast("Access Denied. System Error.", "error");
@@ -96,7 +115,7 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
       const { error } = await supabase.from("games").delete().eq("id", gameId);
       if (error) throw error;
       await refetchAccounts();
-      showToast("Game Removed", "success");
+      setIsAddingGame(false);
     } catch (err) {
       console.error("Error deleting game:", err);
       showToast("Delete Failed", "error");
@@ -124,19 +143,11 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
         {/* Toast Notification */}
         {toast && (
           <div className={`
-            fixed top-10 right-10 z-110 flex animate-fadeInUp items-center gap-3
-            rounded-2xl border px-6 py-4 text-[10px] font-black tracking-[0.2em]
-            uppercase shadow-[0_20px_50px_rgba(0,0,0,0.5)]
-            ${toast.type === "success" ? `
-              border-white/20 bg-linear-to-r from-ps-accent-end
-              to-ps-accent-start text-white
-            ` : `
-              border-white/20 bg-linear-to-r from-red-600 to-red-800 text-white
-            `}
+            fixed bottom-6 left-1/2 -translate-x-1/2 z-110 flex animate-fadeInUp items-center gap-3
+            rounded-2xl border border-white/20 bg-linear-to-r from-red-600 to-red-800 px-6 py-4 text-[10px] font-black tracking-[0.2em]
+            uppercase shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-white
           `}>
-            {toast.type === "success" ? <CircleCheckBig size={16} className="
-              drop-shadow-md
-            " /> : <CircleAlert size={16} className="drop-shadow-md" />}
+            <CircleAlert size={16} className="drop-shadow-md" />
             {toast.message}
           </div>
         )}
@@ -160,7 +171,7 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
             <div>
               <h2 className="
                 text-2xl font-black tracking-tight text-white uppercase
-              ">{account.accountName}</h2>
+              ">{currentAccount.accountName}</h2>
               <p className="
                 text-[10px] font-bold tracking-[0.3em] text-white/40 uppercase
               ">Games Repository</p>
@@ -221,8 +232,7 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
                       <span className="
                         text-center text-[10px] font-black tracking-widest
                         text-white/20 uppercase
-                      ">Upload Game Cover</span>
-                    </div>
+                      ">Upload Game Cover</span>                      <span className="text-[10px] text-white/30 uppercase tracking-[0.2em]">Optional</span>                    </div>
                   )}
                   <input ref={fileRef} type="file" accept="image/*" className="
                     hidden
@@ -250,19 +260,29 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
 
                 <button
                   type="submit"
-                  disabled={submitting}
-                  className="
+                  disabled={submitting || successMessage !== null}
+                  className={`
                     flex w-full items-center justify-center gap-3 rounded-[2rem]
-                    bg-linear-to-r from-ps-accent-start to-ps-accent-end py-5
-                    text-xs font-black tracking-[0.4em] text-white uppercase
+                    py-5 text-xs font-black tracking-[0.4em] text-white uppercase
                     shadow-[0_20px_50px_rgba(0,102,255,0.4)] transition-all
                     hover:scale-[1.01]
                     active:scale-[0.99]
                     disabled:opacity-50
-                  "
+                    ${successMessage ? `
+                      bg-linear-to-r from-ps-accent-end to-ps-accent-end
+                    ` : `
+                      bg-linear-to-r from-ps-accent-start to-ps-accent-end
+                    `}
+                  `}
                 >
-                  {submitting ? <Loader2 size={20} className="animate-spin" /> : <Plus size={20} />}
-                  Add Game to Account
+                  {submitting ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : successMessage ? (
+                    <CircleCheckBig size={20} />
+                  ) : (
+                    <Plus size={20} />
+                  )}
+                  {successMessage || "Add Game to Account"}
                 </button>
               </form>
             </div>
@@ -271,7 +291,7 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
               <div className="flex items-center justify-between">
                 <h3 className="
                   text-xs font-black tracking-[0.4em] text-white/40 uppercase
-                ">Collection ({account.games?.length || 0})</h3>
+                ">Collection ({currentAccount.games?.length || 0})</h3>
                 <button
                   onClick={() => setIsAddingGame(true)}
                   className="
@@ -286,13 +306,13 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
                 </button>
               </div>
 
-              {account.games && account.games.length > 0 ? (
+              {currentAccount.games && currentAccount.games.length > 0 ? (
                 <div className="
                   grid grid-cols-2 gap-6
                   sm:grid-cols-3
                   md:grid-cols-4
                 ">
-                  {account.games.map((game) => (
+                  {currentAccount.games.map((game) => (
                     <div key={game.id} className="
                       group relative aspect-3/4 overflow-hidden rounded-2xl
                       border border-white/5 bg-white/5 shadow-2xl

@@ -75,7 +75,7 @@ export default function DashboardPage() {
     try {
       const { error } = await supabase.from("accounts").delete().eq("id", id);
       if (error) throw error;
-      // Optionally use a toast instead of alert
+      await refetch();
     } catch (err) {
       console.error(err);
       alert("Failed to delete account");
@@ -109,7 +109,7 @@ export default function DashboardPage() {
     return () => subscription.unsubscribe();
   }, [router]);
 
-  const { accounts, loading: accountsLoading, error: accountsError } = useAccountsContext();
+  const { accounts, loading: accountsLoading, error: accountsError, refetch } = useAccountsContext();
   const { providers, loading: providersLoading } = useProvidersContext();
   const loading = accountsLoading || providersLoading || authLoading;
   const [activeFilter, setActiveFilter] = useState<string>("all");

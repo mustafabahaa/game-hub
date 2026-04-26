@@ -47,7 +47,8 @@ export default function AccountModal({
   const [form, setForm] = useState<AccountFormData>({ ...EMPTY_ACCOUNT_FORM });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "error" } | null>(null);
 
   useEffect(() => {
     if (initialEditAccount) {
@@ -70,9 +71,10 @@ export default function AccountModal({
     } else {
       resetForm();
     }
+    setSuccessMessage(null);
   }, [initialEditAccount, initialData, isOpen]);
 
-  const showToast = (message: string, type: "success" | "error") => {
+  const showToast = (message: string, type: "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
@@ -115,11 +117,13 @@ export default function AccountModal({
       // Update local context to show new item immediately
       await refetchAccounts();
       
-      showToast(editingId ? "Vault Entry Updated" : "Account Secured in Vault", "success");
+      const successMsg = editingId ? "Vault Entry Updated" : "Account Secured in Vault";
+      setSuccessMessage(successMsg);
       setTimeout(() => {
+        setSuccessMessage(null);
         resetForm();
         onClose();
-      }, 1000);
+      }, 1500);
     } catch {
       showToast("Access Denied. System Error.", "error");
     }
@@ -158,8 +162,8 @@ export default function AccountModal({
 
         <div className="relative z-10 flex-1 overflow-y-auto custom-scrollbar p-8 lg:p-10">
           {toast && (
-            <div className={`fixed top-10 right-10 z-110 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border ${toast.type === "success" ? "bg-linear-to-r from-ps-accent-end to-ps-accent-start border-white/20 text-white" : "bg-linear-to-r from-red-600 to-red-800 border-white/20 text-white"}`}>
-              {toast.type === "success" ? <CircleCheckBig size={16} className="drop-shadow-md" /> : <CircleAlert size={16} className="drop-shadow-md" />}
+            <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-110 px-6 py-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center gap-3 animate-fadeInUp shadow-[0_20px_50px_rgba(0,0,0,0.5)] border border-white/20 bg-linear-to-r from-red-600 to-red-800 text-white`}>
+              <CircleAlert size={16} className="drop-shadow-md" />
               {toast.message}
             </div>
           )}
@@ -314,13 +318,19 @@ export default function AccountModal({
             <div className="pt-8 flex justify-end">
               <button
                 type="submit"
-                disabled={submitting}
-                className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-linear-to-r from-ps-accent-start to-ps-accent-blue-light px-12 py-5 text-xs font-black tracking-[0.4em] text-white uppercase shadow-[0_20px_50px_rgba(0,102,255,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99]"
+                disabled={submitting || successMessage !== null}
+                className={`group relative overflow-hidden rounded-[2rem] border px-12 py-5 text-xs font-black tracking-[0.4em] text-white uppercase shadow-[0_20px_50px_rgba(0,102,255,0.4)] transition-all hover:scale-[1.01] active:scale-[0.99] ${successMessage ? `border-ps-accent-blue bg-linear-to-r from-ps-accent-blue to-ps-accent-blue-light` : `border-white/10 bg-linear-to-r from-ps-accent-start to-ps-accent-blue-light`}`}
               >
                 <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-linear-to-r from-transparent via-white/30 to-transparent" />
                 <span className="relative z-10 flex items-center gap-3">
-                  {submitting ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
-                  {editingId ? "Save Changes" : "Create Account"}
+                  {submitting ? (
+                    <Loader2 size={20} className="animate-spin" />
+                  ) : successMessage ? (
+                    <CircleCheckBig size={20} />
+                  ) : (
+                    <Save size={20} />
+                  )}
+                  {successMessage || (editingId ? "Save Changes" : "Create Account")}
                 </span>
               </button>
             </div>

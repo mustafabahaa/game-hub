@@ -30,16 +30,19 @@ const EMPTY_PROVIDER_FORM: ProviderFormData = {
 export default function ProviderModal({ 
   isOpen, 
   onClose,
-  initialEditProvider
+  initialEditProvider,
+  onSuccess
 }: { 
   isOpen: boolean; 
   onClose: () => void;
   initialEditProvider?: Provider | null;
+  onSuccess?: () => void;
 }) {
   const [providerForm, setProviderForm] = useState<ProviderFormData>({ ...EMPTY_PROVIDER_FORM });
   const [submitting, setSubmitting] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: "error" } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -58,9 +61,10 @@ export default function ProviderModal({
       setProviderForm({ ...EMPTY_PROVIDER_FORM });
       setPreview(null);
     }
+    setSuccessMessage(null);
   }, [initialEditProvider, isOpen]);
 
-  const showToast = (message: string, type: "success" | "error") => {
+  const showToast = (message: string, type: "error") => {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
   };
@@ -115,10 +119,13 @@ export default function ProviderModal({
 
       if (error) throw error;
       
-      showToast(initialEditProvider ? "Changes saved" : "Provider added", "success");
+      const successMsg = initialEditProvider ? "Changes saved" : "Provider added";
+      setSuccessMessage(successMsg);
+      onSuccess?.();
       setTimeout(() => {
+        setSuccessMessage(null);
         onClose();
-      }, 1000);
+      }, 1500);
     } catch (err) {
       console.error(err);
       showToast("Failed to process request", "error");
@@ -182,13 +189,10 @@ export default function ProviderModal({
         ">
           {toast && (
             <div className={`
-              fixed top-10 right-10 z-110 flex animate-fadeInUp items-center
-              gap-3 rounded-2xl border px-6 py-4 text-sm font-bold shadow-2xl
-              ${toast.type === "success" ? `
-                border-white/20 bg-ps-accent-blue text-white
-              ` : `border-white/20 bg-red-500 text-white`}
+              fixed bottom-6 left-1/2 -translate-x-1/2 z-110 flex animate-fadeInUp items-center
+              gap-3 rounded-2xl border border-white/20 bg-red-500 px-6 py-4 text-sm font-bold text-white shadow-2xl
             `}>
-              {toast.type === "success" ? <CircleCheckBig size={20} /> : <CircleAlert size={20} />}
+              <CircleAlert size={20} />
               {toast.message}
             </div>
           )}
@@ -323,16 +327,21 @@ export default function ProviderModal({
             
             <button
               type="submit"
-              disabled={submitting}
-              className="
+              disabled={submitting || successMessage !== null}
+              className={`
                 group relative w-full overflow-hidden rounded-2xl border
-                border-white/10 bg-linear-to-r from-ps-accent-start
-                to-ps-accent-blue-light py-5 text-xs font-black tracking-[0.3em]
-                text-white uppercase shadow-[0_15px_40px_rgba(0,102,255,0.4)]
-                transition-all
+                py-5 text-xs font-black tracking-[0.3em]
+                text-white uppercase transition-all
                 hover:scale-[1.01]
                 active:scale-[0.99]
-              "
+                ${successMessage ? `
+                  border-ps-accent-blue bg-linear-to-r from-ps-accent-blue to-ps-accent-blue-light
+                  shadow-[0_15px_40px_rgba(0,102,255,0.4)]
+                ` : `
+                  border-white/10 bg-linear-to-r from-ps-accent-start
+                  to-ps-accent-blue-light shadow-[0_15px_40px_rgba(0,102,255,0.4)]
+                `}
+              `}
             >
               <div className="
                 absolute inset-0 -translate-x-full bg-linear-to-r
@@ -342,8 +351,16 @@ export default function ProviderModal({
               <span className="
                 relative z-10 flex items-center justify-center gap-3
               ">
-                {submitting ? <Loader2 size={18} className="animate-spin" /> : initialEditProvider ? <Save size={18} /> : <Plus size={18} />}
-                {initialEditProvider ? "Save Changes" : "Add Provider"}
+                {submitting ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : successMessage ? (
+                  <CircleCheckBig size={18} />
+                ) : initialEditProvider ? (
+                  <Save size={18} />
+                ) : (
+                  <Plus size={18} />
+                )}
+                {successMessage || (initialEditProvider ? "Save Changes" : "Add Provider")}
               </span>
             </button>
           </form>

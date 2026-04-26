@@ -24,7 +24,7 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 
 export default function ProvidersPage() {
-  const { providers, loading } = useProvidersContext();
+  const { providers, loading, refetch } = useProvidersContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editProvider, setEditProvider] = useState<Provider | null>(null);
@@ -50,6 +50,7 @@ export default function ProvidersPage() {
     try {
       const { error } = await supabase.from("providers").delete().eq("id", id);
       if (error) throw error;
+      await refetch();
     } catch {
       alert("Something went wrong. Please try again.");
     }
@@ -248,6 +249,7 @@ export default function ProvidersPage() {
           setEditProvider(null);
         }}
         initialEditProvider={editProvider}
+        onSuccess={refetch}
       />
     </div>
   );
