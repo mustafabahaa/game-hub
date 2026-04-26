@@ -4,6 +4,8 @@ import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { Account, GameFormData } from "@/types/account";
 import { supabase } from "@/lib/supabase";
+import { getStoragePathFromPublicUrl } from "@/lib/storage";
+import { optimizeImageForUpload } from "@/lib/imageUpload";
 import { useAccountsContext } from "@/context/AccountsContext";
 import Aurora from "@/components/Aurora";
 import ConfirmDialog from "@/components/ConfirmDialog";
@@ -80,9 +82,10 @@ if (!gameForm.title) {
     try {
       let imageUrl: string | null = null;
       if (gameForm.imageFile) {
-        const fileExt = gameForm.imageFile.name.split(".").pop();
+        const optimizedImage = await optimizeImageForUpload(gameForm.imageFile);
+        const fileExt = optimizedImage.name.split(".").pop();
         const filePath = `games/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from("game-images").upload(filePath, gameForm.imageFile);
+        const { error: uploadError } = await supabase.storage.from("game-images").upload(filePath, optimizedImage);
         if (uploadError) throw uploadError;
 
         imageUrl = supabase.storage.from("game-images").getPublicUrl(filePath).data.publicUrl;
@@ -122,6 +125,15 @@ if (!gameForm.title) {
     if (!gameToDeleteId) return;
     setDeletingGame(true);
     try {
+      const gameToDelete = currentAccount.games?.find((g) => g.id === gameToDeleteId);
+      const imagePath = getStoragePathFromPublicUrl(gameToDelete?.imageUrl, "game-images");
+      if (imagePath) {
+        const { error: storageError } = await supabase.storage.from("game-images").remove([imagePath]);
+        if (storageError) {
+          console.warn("Failed to remove game image from storage:", storageError.message);
+        }
+      }
+
       const { error } = await supabase.from("games").delete().eq("id", gameToDeleteId);
       if (error) throw error;
       await refetchAccounts();

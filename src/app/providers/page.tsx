@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import { getStoragePathFromPublicUrl } from "@/lib/storage";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ProvidersPage() {
@@ -57,6 +58,15 @@ export default function ProvidersPage() {
     if (!providerToDeleteId) return;
     setDeletingProvider(true);
     try {
+      const providerToDelete = providers.find((p) => p.id === providerToDeleteId);
+      const photoPath = getStoragePathFromPublicUrl(providerToDelete?.photoUrl, "game-images");
+      if (photoPath) {
+        const { error: storageError } = await supabase.storage.from("game-images").remove([photoPath]);
+        if (storageError) {
+          console.warn("Failed to remove provider photo from storage:", storageError.message);
+        }
+      }
+
       const { error } = await supabase.from("providers").delete().eq("id", providerToDeleteId);
       if (error) throw error;
       await refetch();

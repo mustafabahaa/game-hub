@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Provider, ProviderFormData } from "@/types/provider";
 import { supabase } from "@/lib/supabase";
+import { optimizeImageForUpload } from "@/lib/imageUpload";
+import { getStoragePathFromPublicUrl } from "@/lib/storage";
 import Aurora from "@/components/Aurora";
 import {
   Plus,
@@ -85,13 +87,15 @@ export default function ProviderModal({
       let photoUrl = initialEditProvider?.photoUrl || null;
 
       if (providerForm.photo) {
-        const fileExt = providerForm.photo.name.split('.').pop();
+        const previousPhotoPath = getStoragePathFromPublicUrl(initialEditProvider?.photoUrl, "game-images");
+        const optimizedPhoto = await optimizeImageForUpload(providerForm.photo);
+        const fileExt = optimizedPhoto.name.split('.').pop();
         const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
         const filePath = `provider-photos/${fileName}`;
 
         const { error: uploadError } = await supabase.storage
           .from("game-images") // Using existing game-images bucket
-          .upload(filePath, providerForm.photo);
+          .upload(filePath, optimizedPhoto);
 
         if (uploadError) throw uploadError;
 
@@ -100,6 +104,15 @@ export default function ProviderModal({
           .getPublicUrl(filePath);
           
         photoUrl = publicUrl;
+
+        if (initialEditProvider && previousPhotoPath) {
+          const { error: oldPhotoDeleteError } = await supabase.storage
+            .from("game-images")
+            .remove([previousPhotoPath]);
+          if (oldPhotoDeleteError) {
+            console.warn("Failed to remove previous provider photo:", oldPhotoDeleteError.message);
+          }
+        }
       }
 
       const payload = { 

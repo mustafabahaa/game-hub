@@ -7,6 +7,7 @@ import { useProvidersContext } from "@/context/ProvidersContext";
 import AccountCard from "@/components/AccountCard";
 import AccountDetailModal from "@/components/AccountDetailModal";
 import { supabase } from "@/lib/supabase";
+import { getStoragePathFromPublicUrl } from "@/lib/storage";
 import Aurora from "@/components/Aurora";
 import SplashCursor from "@/components/SplashCursor";
 import SplitText from "@/components/SplitText";
@@ -82,6 +83,20 @@ export default function DashboardPage() {
     if (!accountToDeleteId) return;
     setDeletingAccount(true);
     try {
+      const accountToDelete = accounts.find((a) => a.id === accountToDeleteId);
+      const gameImagePaths = (accountToDelete?.games || [])
+        .map((g) => getStoragePathFromPublicUrl(g.imageUrl, "game-images"))
+        .filter((path): path is string => Boolean(path));
+
+      if (gameImagePaths.length > 0) {
+        const { error: storageError } = await supabase.storage
+          .from("game-images")
+          .remove(gameImagePaths);
+        if (storageError) {
+          console.warn("Failed to remove some game images from storage:", storageError.message);
+        }
+      }
+
       const { error } = await supabase.from("accounts").delete().eq("id", accountToDeleteId);
       if (error) throw error;
       await refetch();
