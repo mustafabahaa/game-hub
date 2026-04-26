@@ -113,6 +113,8 @@ interface AuroraProps {
   blend?: number;
   time?: number;
   speed?: number;
+  maxFps?: number;
+  maxDpr?: number;
 }
 
 const Aurora = memo(function Aurora(props: AuroraProps) {
@@ -129,7 +131,7 @@ const Aurora = memo(function Aurora(props: AuroraProps) {
     const renderer = new Renderer({
       alpha: true,
       premultipliedAlpha: true,
-      antialias: true
+      antialias: false
     });
     const gl = renderer.gl;
     gl.clearColor(0, 0, 0, 0);
@@ -144,10 +146,13 @@ const Aurora = memo(function Aurora(props: AuroraProps) {
       delete geometry.attributes.uv;
     }
 
-    const colorStopsArray = colorStops.map(hex => {
+    const parseColorStops = (stops: string[]) => stops.map((hex) => {
       const c = new Color(hex);
       return [c.r, c.g, c.b];
     });
+
+    let cachedStopsKey = colorStops.join('|');
+    let cachedColorStopsArray = parseColorStops(colorStops);
 
     const program = new Program(gl, {
       vertex: VERT,
@@ -155,7 +160,7 @@ const Aurora = memo(function Aurora(props: AuroraProps) {
       uniforms: {
         uTime: { value: 0 },
         uAmplitude: { value: amplitude },
-        uColorStops: { value: colorStopsArray },
+        uColorStops: { value: cachedColorStopsArray },
         uResolution: { value: [ctn.offsetWidth, ctn.offsetHeight] },
         uBlend: { value: blend }
       }
@@ -165,6 +170,8 @@ const Aurora = memo(function Aurora(props: AuroraProps) {
       if (!ctn) return;
       const width = ctn.offsetWidth;
       const height = ctn.offsetHeight;
+      const dpr = Math.min(window.devicePixelRatio || 1, propsRef.current.maxDpr ?? 1.5);
+      renderer.dpr = dpr;
       renderer.setSize(width, height);
       program.uniforms.uResolution.value = [width, height];
     }
@@ -174,18 +181,31 @@ const Aurora = memo(function Aurora(props: AuroraProps) {
     ctn.appendChild(gl.canvas);
 
     let animateId = 0;
+    let previousFrameTime = 0;
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     const update = (t: number) => {
       animateId = requestAnimationFrame(update);
+      const isHidden = document.visibilityState === 'hidden';
+      const shouldAnimate = !isHidden && !reducedMotionQuery.matches;
+      if (!shouldAnimate) return;
+
+      const maxFps = propsRef.current.maxFps ?? 30;
+      const frameInterval = 1000 / Math.max(1, maxFps);
+      if (t - previousFrameTime < frameInterval) return;
+      previousFrameTime = t;
+
       const { time = t * 0.01, speed = 1.0 } = propsRef.current;
       if (program) {
         program.uniforms.uTime.value = time * speed * 0.1;
         program.uniforms.uAmplitude.value = propsRef.current.amplitude ?? 1.0;
         program.uniforms.uBlend.value = propsRef.current.blend ?? blend;
         const stops = propsRef.current.colorStops ?? colorStops;
-        program.uniforms.uColorStops.value = stops.map((hex: string) => {
-          const c = new Color(hex);
-          return [c.r, c.g, c.b];
-        });
+        const nextStopsKey = stops.join('|');
+        if (nextStopsKey !== cachedStopsKey) {
+          cachedStopsKey = nextStopsKey;
+          cachedColorStopsArray = parseColorStops(stops);
+          program.uniforms.uColorStops.value = cachedColorStopsArray;
+        }
         renderer.render({ scene: mesh });
       }
     };
