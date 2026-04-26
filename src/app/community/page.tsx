@@ -32,9 +32,11 @@ interface CommunityProfile {
 }
 
 export default function CommunityPage() {
+  const GAMES_PREVIEW_LIMIT = 5;
   const [profiles, setProfiles] = useState<CommunityProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [expandedProfiles, setExpandedProfiles] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     const loadCommunity = async () => {
@@ -125,16 +127,16 @@ export default function CommunityPage() {
           </p>
         </div>
 
-        <div className="mb-10 relative">
-          <div className="absolute inset-y-0 left-6 flex items-center text-white/30">
-            <Search size={18} />
+        <div className="mb-10 relative w-full">
+          <div className="relative flex items-center gap-3 rounded-[2rem] p-5">
+            <Search size={22} className="text-white/40" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by username or game title..."
+              className="flex-1 bg-transparent outline-none focus:outline-none focus-visible:outline-none ring-0 text-white font-semibold placeholder:text-white/30 text-2xl"
+            />
           </div>
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by username or game title..."
-            className="w-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-2xl pl-14 pr-6 py-4 text-sm font-bold text-white outline-none focus:border-ps-accent-blue-light/50 focus:bg-white/10 transition-all"
-          />
         </div>
 
         {loading ? (
@@ -150,6 +152,15 @@ export default function CommunityPage() {
           <div className="space-y-6">
             {filteredProfiles.map((profile) => (
               <section key={profile.userId} className="rounded-[2rem] border border-white/10 bg-black/50 backdrop-blur-2xl p-6">
+                {(() => {
+                  const isExpanded = Boolean(expandedProfiles[profile.userId]);
+                  const visibleGames = isExpanded
+                    ? profile.games
+                    : profile.games.slice(0, GAMES_PREVIEW_LIMIT);
+                  const remainingCount = profile.games.length - GAMES_PREVIEW_LIMIT;
+
+                  return (
+                    <>
                 <div className="flex items-center justify-between gap-4 mb-6">
                   <div className="flex items-center gap-4">
                     <div className="size-12 rounded-2xl bg-white/10 border border-white/10 overflow-hidden flex items-center justify-center text-white/60 font-black">
@@ -171,7 +182,7 @@ export default function CommunityPage() {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                  {profile.games.map((game) => (
+                  {visibleGames.map((game) => (
                     <article key={game.id} className="group rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
                       <div className="aspect-3/4 bg-black/40 flex items-center justify-center">
                         {game.imageUrl ? (
@@ -188,6 +199,44 @@ export default function CommunityPage() {
                     </article>
                   ))}
                 </div>
+                {profile.games.length > GAMES_PREVIEW_LIMIT && !isExpanded ? (
+                  <div className="mt-4 flex items-center justify-between gap-3">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/45">
+                      +{remainingCount} more games
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedProfiles((prev) => ({
+                          ...prev,
+                          [profile.userId]: true,
+                        }))
+                      }
+                      className="text-[10px] font-black uppercase tracking-[0.18em] text-ps-accent-blue-light hover:text-white transition-colors"
+                    >
+                      See all
+                    </button>
+                  </div>
+                ) : null}
+                {isExpanded ? (
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setExpandedProfiles((prev) => ({
+                          ...prev,
+                          [profile.userId]: false,
+                        }))
+                      }
+                      className="text-[10px] font-black uppercase tracking-[0.18em] text-white/50 hover:text-white transition-colors"
+                    >
+                      Show less
+                    </button>
+                  </div>
+                ) : null}
+                    </>
+                  );
+                })()}
               </section>
             ))}
           </div>

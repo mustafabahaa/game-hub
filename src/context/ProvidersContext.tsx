@@ -40,6 +40,7 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
       setProviders(
         (data || []).map((row) => ({
           id: String(row.id),
+          userId: row.user_id || undefined,
           name: row.name,
           website: row.website || undefined,
           whatsapp: row.whatsapp || undefined,

@@ -1,5 +1,6 @@
 export interface Provider {
   id: string;
+  userId?: string;
   name: string;
   website?: string;
   whatsapp?: string;

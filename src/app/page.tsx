@@ -262,7 +262,7 @@ export default function DashboardPage() {
                   className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
                 >
                   <Database size={14} className="text-ps-accent-blue-light" />
-                  Manage Providers
+                  Providers
                 </Link>
             </div>
 
@@ -463,7 +463,7 @@ export default function DashboardPage() {
                 <div className="size-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-black/20 shadow-lg border border-white/10 group-hover:border-black/10">
                   <Database size={20} className="text-ps-accent-blue-light group-hover:text-white transition-colors" />
                 </div>
-                <span>Manage Providers</span>
+                <span>Providers</span>
               </Link>
             </div>
           )}
