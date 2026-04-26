@@ -6,6 +6,7 @@ import { Account, GameFormData } from "@/types/account";
 import { supabase } from "@/lib/supabase";
 import { useAccountsContext } from "@/context/AccountsContext";
 import Aurora from "@/components/Aurora";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { 
   X, 
   Plus, 
@@ -35,6 +36,8 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
   const [gameForm, setGameForm] = useState<GameFormData>({ title: "", imageFile: null, imageUrl: "" });
   const [preview, setPreview] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: "error" } | null>(null);
+  const [gameToDeleteId, setGameToDeleteId] = useState<string | null>(null);
+  const [deletingGame, setDeletingGame] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -44,6 +47,8 @@ export default function AccountDetailModal({ isOpen, onClose, account }: Account
       setGameForm({ title: "", imageFile: null, imageUrl: "" });
       setPreview(null);
       setToast(null);
+      setGameToDeleteId(null);
+      setDeletingGame(false);
     }
   }, [isOpen, currentAccount?.id]);
 
@@ -109,16 +114,24 @@ if (!gameForm.title) {
     }
   };
 
-  const handleDeleteGame = async (gameId: string) => {
-    if (!confirm("Are you sure you want to delete this game?")) return;
+  const handleDeleteGame = (gameId: string) => {
+    setGameToDeleteId(gameId);
+  };
+
+  const confirmDeleteGame = async () => {
+    if (!gameToDeleteId) return;
+    setDeletingGame(true);
     try {
-      const { error } = await supabase.from("games").delete().eq("id", gameId);
+      const { error } = await supabase.from("games").delete().eq("id", gameToDeleteId);
       if (error) throw error;
       await refetchAccounts();
       setIsAddingGame(false);
+      setGameToDeleteId(null);
     } catch (err) {
       console.error("Error deleting game:", err);
       showToast("Delete Failed", "error");
+    } finally {
+      setDeletingGame(false);
     }
   };
 
@@ -371,6 +384,15 @@ if (!gameForm.title) {
           )}
         </main>
       </div>
+      <ConfirmDialog
+        isOpen={Boolean(gameToDeleteId)}
+        title="Delete Game?"
+        message="This game will be permanently removed from this account."
+        confirmLabel="Delete"
+        loading={deletingGame}
+        onCancel={() => !deletingGame && setGameToDeleteId(null)}
+        onConfirm={confirmDeleteGame}
+      />
     </div>
   );
 }

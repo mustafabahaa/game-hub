@@ -22,12 +22,16 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function ProvidersPage() {
   const { providers, loading, refetch } = useProvidersContext();
   const [searchQuery, setSearchQuery] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editProvider, setEditProvider] = useState<Provider | null>(null);
+  const [providerToDeleteId, setProviderToDeleteId] = useState<string | null>(null);
+  const [deletingProvider, setDeletingProvider] = useState(false);
+  const [deleteErrorToast, setDeleteErrorToast] = useState<string | null>(null);
 
   const filteredProviders = useMemo(() => {
     return providers.filter((p) =>
@@ -45,14 +49,23 @@ export default function ProvidersPage() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this provider?")) return;
+  const handleDelete = (id: string) => {
+    setProviderToDeleteId(id);
+  };
+
+  const confirmDeleteProvider = async () => {
+    if (!providerToDeleteId) return;
+    setDeletingProvider(true);
     try {
-      const { error } = await supabase.from("providers").delete().eq("id", id);
+      const { error } = await supabase.from("providers").delete().eq("id", providerToDeleteId);
       if (error) throw error;
       await refetch();
+      setProviderToDeleteId(null);
     } catch {
-      alert("Something went wrong. Please try again.");
+      setDeleteErrorToast("Something went wrong. Please try again.");
+      setTimeout(() => setDeleteErrorToast(null), 3000);
+    } finally {
+      setDeletingProvider(false);
     }
   };
 
@@ -250,6 +263,20 @@ export default function ProvidersPage() {
         }}
         initialEditProvider={editProvider}
         onSuccess={refetch}
+      />
+      {deleteErrorToast && (
+        <div className="fixed bottom-6 left-1/2 z-110 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/20 bg-linear-to-r from-red-600 to-red-800 px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeInUp">
+          <span>{deleteErrorToast}</span>
+        </div>
+      )}
+      <ConfirmDialog
+        isOpen={Boolean(providerToDeleteId)}
+        title="Delete Provider?"
+        message="This provider will be permanently removed from your registry."
+        confirmLabel="Delete"
+        loading={deletingProvider}
+        onCancel={() => !deletingProvider && setProviderToDeleteId(null)}
+        onConfirm={confirmDeleteProvider}
       />
     </div>
   );

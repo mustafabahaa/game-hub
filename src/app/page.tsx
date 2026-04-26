@@ -12,6 +12,7 @@ import SplashCursor from "@/components/SplashCursor";
 import SplitText from "@/components/SplitText";
 import AccountModal from "@/components/AccountModal";
 import ProviderModal from "@/components/ProviderModal";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Account } from "@/types/account";
 import {
   Gamepad2,
@@ -47,6 +48,9 @@ export default function DashboardPage() {
 
   const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState<Account | null>(null);
+  const [accountToDeleteId, setAccountToDeleteId] = useState<string | null>(null);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [deleteErrorToast, setDeleteErrorToast] = useState<string | null>(null);
 
   const openAccountModal = (account?: Account, data?: Partial<Account>) => {
     setEditingAccount(account || null);
@@ -70,15 +74,24 @@ export default function DashboardPage() {
     setIsProviderModalOpen(false);
   };
 
-  const handleDeleteAccount = async (id: string) => {
-    if (!confirm("Are you sure you want to lock and delete this vault entry?")) return;
+  const handleDeleteAccount = (id: string) => {
+    setAccountToDeleteId(id);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!accountToDeleteId) return;
+    setDeletingAccount(true);
     try {
-      const { error } = await supabase.from("accounts").delete().eq("id", id);
+      const { error } = await supabase.from("accounts").delete().eq("id", accountToDeleteId);
       if (error) throw error;
       await refetch();
+      setAccountToDeleteId(null);
     } catch (err) {
       console.error(err);
-      alert("Failed to delete account");
+      setDeleteErrorToast("Failed to delete account");
+      setTimeout(() => setDeleteErrorToast(null), 3000);
+    } finally {
+      setDeletingAccount(false);
     }
   };
 
@@ -439,6 +452,21 @@ export default function DashboardPage() {
             onClose={closeProviderModal}
           />
         </>
+      {deleteErrorToast && (
+        <div className="fixed bottom-6 left-1/2 z-110 flex -translate-x-1/2 items-center gap-3 rounded-2xl border border-white/20 bg-linear-to-r from-red-600 to-red-800 px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-white shadow-[0_20px_50px_rgba(0,0,0,0.5)] animate-fadeInUp">
+          <CircleAlert size={16} className="drop-shadow-md" />
+          {deleteErrorToast}
+        </div>
+      )}
+      <ConfirmDialog
+        isOpen={Boolean(accountToDeleteId)}
+        title="Delete Vault Entry?"
+        message="This account will be locked and permanently removed."
+        confirmLabel="Delete"
+        loading={deletingAccount}
+        onCancel={() => !deletingAccount && setAccountToDeleteId(null)}
+        onConfirm={confirmDeleteAccount}
+      />
     </div>
   );
 }
