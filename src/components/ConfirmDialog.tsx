@@ -59,7 +59,7 @@ export default function ConfirmDialog({
         </header>
 
         <div className="relative z-10 space-y-8 p-8 lg:p-10">
-          <p className="text-sm leading-relaxed text-white/75">{message}</p>
+          <p className="text-sm/relaxed text-white/75">{message}</p>
 
           <div className="flex items-center justify-end gap-3">
             <button
