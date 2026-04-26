@@ -67,6 +67,15 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   }), []);
 
   const fetchAccounts = useCallback(async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setAccounts([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const { data, error: fetchError } = await supabase
       .from("accounts")
       .select("*, games(*)")
@@ -82,9 +91,20 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
   }, [mapRow]);
 
   useEffect(() => {
+    const clearStateForAuthSwitch = () => {
+      setAccounts([]);
+      setError(null);
+      setLoading(true);
+    };
+
     void (async () => {
       await fetchAccounts();
     })();
+
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(() => {
+      clearStateForAuthSwitch();
+      void fetchAccounts();
+    });
 
     const channel = supabase
       .channel("global-accounts-realtime")
@@ -105,6 +125,7 @@ export function AccountsProvider({ children }: { children: ReactNode }) {
       .subscribe();
 
     return () => {
+      authSubscription.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, [fetchAccounts]);

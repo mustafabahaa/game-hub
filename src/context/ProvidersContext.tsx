@@ -19,6 +19,15 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const fetchProviders = useCallback(async () => {
+    setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setProviders([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     const { data, error: fetchError } = await supabase
       .from("providers")
       .select("*")
@@ -46,9 +55,20 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const clearStateForAuthSwitch = () => {
+      setProviders([]);
+      setError(null);
+      setLoading(true);
+    };
+
     void (async () => {
       await fetchProviders();
     })();
+
+    const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(() => {
+      clearStateForAuthSwitch();
+      void fetchProviders();
+    });
 
     const channel = supabase
       .channel("global-providers-realtime")
@@ -62,6 +82,7 @@ export function ProvidersProvider({ children }: { children: ReactNode }) {
       .subscribe();
 
     return () => {
+      authSubscription.unsubscribe();
       supabase.removeChannel(channel);
     };
   }, [fetchProviders]);

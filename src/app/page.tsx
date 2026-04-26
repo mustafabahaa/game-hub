@@ -75,6 +75,23 @@ export default function DashboardPage() {
     setIsProviderModalOpen(false);
   };
 
+  const ensurePublicProfile = async (userId: string, fallbackName: string) => {
+    const normalized = (fallbackName || "player").toLowerCase().replace(/[^a-z0-9_]/g, "_").slice(0, 24) || "player";
+    const suffix = userId.replace(/-/g, "").slice(0, 6);
+    const username = `${normalized}_${suffix}`;
+    const { error } = await supabase.from("user_profiles").upsert(
+      {
+        user_id: userId,
+        username,
+        display_name: fallbackName || "Player",
+      },
+      { onConflict: "user_id" }
+    );
+    if (error) {
+      console.warn("Unable to upsert public profile:", error.message);
+    }
+  };
+
   const handleDeleteAccount = (id: string) => {
     setAccountToDeleteId(id);
   };
@@ -118,7 +135,9 @@ export default function DashboardPage() {
       } else {
         setIsAuthenticated(true);
         setUserEmail(session.user.email || "");
-        setUserName(session.user.user_metadata?.full_name || "Player");
+        const resolvedName = session.user.user_metadata?.full_name || "Player";
+        setUserName(resolvedName);
+        await ensurePublicProfile(session.user.id, resolvedName);
       }
       setAuthLoading(false);
     };
@@ -231,6 +250,13 @@ export default function DashboardPage() {
                 <Gamepad2 size={24} className="text-ps-accent-end" />
                 <h1 className="text-xl font-black text-white tracking-widest drop-shadow-md uppercase">GameHub</h1>
               </div>
+                <Link
+                  href="/community"
+                  className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
+                >
+                  <Gamepad2 size={14} className="text-ps-accent-blue-light" />
+                  Community
+                </Link>
                 <Link
                   href="/providers"
                   className="hidden md:flex items-center gap-2 px-5 py-2 rounded-xl bg-white/5 border border-white/5 text-[10px] font-black uppercase tracking-[0.2em] text-white/40 hover:text-white hover:bg-white/10 transition-all"
