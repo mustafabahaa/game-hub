@@ -34,17 +34,37 @@ async function hasOwnerClaim(user: User, forceRefresh = false): Promise<boolean>
   return token.claims.owner === true;
 }
 
+function withTimeout<T>(promise: Promise<T>, milliseconds: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error('Owner access verification timed out.')), milliseconds);
+    promise.then(
+      (value) => {
+        window.clearTimeout(timeout);
+        resolve(value);
+      },
+      (error: unknown) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
+}
+
 function accessDeniedError() {
   return Object.assign(new Error('This Google account is not authorized to use GameHub.'), { code: 'gamehub/access-denied' });
 }
 
 export const authLib = {
+  /** Read the current session token for first-party consent endpoints. */
+  async getCurrentIdToken(): Promise<string | null> {
+    return (await requireAuth().currentUser?.getIdToken()) ?? null;
+  },
   /** Subscribe to auth state. Returns an unsubscribe fn. */
   onAuthStateChanged(cb: (user: GameHubUser | null, denied?: boolean) => void) {
     return fsOnAuthStateChanged(requireAuth(), async (user) => {
       if (!user) { cb(null); return; }
       try {
-        if (await hasOwnerClaim(user)) { cb(toGameHubUser(user)); return; }
+        if (await withTimeout(hasOwnerClaim(user), 8_000)) { cb(toGameHubUser(user)); return; }
         cb(null, true);
         await fsSignOut(requireAuth());
       } catch (error) {
@@ -61,7 +81,7 @@ export const authLib = {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(a, provider);
-      if (!(await hasOwnerClaim(result.user, true))) {
+      if (!(await withTimeout(hasOwnerClaim(result.user, true), 8_000))) {
         await fsSignOut(a);
         throw accessDeniedError();
       }
@@ -80,7 +100,7 @@ export const authLib = {
   async handleRedirectResult(): Promise<GameHubUser | null> {
     try {
       const result = await getRedirectResult(requireAuth());
-      if (result?.user && !(await hasOwnerClaim(result.user, true))) {
+      if (result?.user && !(await withTimeout(hasOwnerClaim(result.user, true), 8_000))) {
         await fsSignOut(requireAuth());
         throw accessDeniedError();
       }

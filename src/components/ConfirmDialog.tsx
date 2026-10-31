@@ -1,6 +1,6 @@
-import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Typography, type SxProps, type Theme } from '@mui/material';
-import { TriangleAlert } from 'lucide-react';
-
+import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Box, Paper, Typography } from '@monochrome-ui/design-system';
+import type { SxProps, Theme } from '@mui/material/styles';
+import { WarningIcon as TriangleAlert } from '@/components/AppIcon';
 interface ConfirmDialogProps {
   open: boolean;
   title: string;
@@ -25,22 +25,11 @@ export function ConfirmDialog({
     <Dialog open={open} onClose={onClose} maxWidth="xs" fullWidth>
       <Box sx={{ p: 1 }}>
         <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start', p: 2 }}>
-          <Box
-            sx={{
-              width: 44,
-              height: 44,
-              borderRadius: 2,
-              display: 'grid',
-              placeItems: 'center',
-              flexShrink: 0,
-              bgcolor: 'action.selected',
-              color: 'error.main',
-            }}
-          >
+          <Paper elevation={0} variant="dangerIconBadge">
             <TriangleAlert size={20} />
-          </Box>
+          </Paper>
           <Box>
-            <DialogTitle sx={{ p: 0, mb: 1, fontWeight: 800 }}>{title}</DialogTitle>
+            <DialogTitle sx={{ p: 0, mb: 1 }}><Typography variant="dialogTitle" component="span">{title}</Typography></DialogTitle>
             <DialogContent sx={{ p: 0 }}>
               <Typography variant="body2" color="text.secondary">
                 {message}

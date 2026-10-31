@@ -130,7 +130,7 @@ export default function SplashCursor({
 
       const isWebGL2 = 'drawBuffers' in gl;
 
-      let supportLinearFiltering = false;
+      let supportLinearFiltering: boolean;
       let halfFloat = null;
 
       if (isWebGL2) {
@@ -147,9 +147,9 @@ export default function SplashCursor({
         ? (gl as WebGL2RenderingContext).HALF_FLOAT
         : (halfFloat && (halfFloat as { HALF_FLOAT_OES: number }).HALF_FLOAT_OES) || 0;
 
-      let formatRGBA: { internalFormat: number; format: number } | null = null;
-      let formatRG: { internalFormat: number; format: number } | null = null;
-      let formatR: { internalFormat: number; format: number } | null = null;
+      let formatRGBA: { internalFormat: number; format: number } | null;
+      let formatRG: { internalFormat: number; format: number } | null;
+      let formatR: { internalFormat: number; format: number } | null;
 
       if (isWebGL2) {
         formatRGBA = getSupportedFormat(gl, (gl as WebGL2RenderingContext).RGBA16F, gl.RGBA, halfFloatTexType);

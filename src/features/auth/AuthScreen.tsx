@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Alert, Stack, CircularProgress } from '@mui/material';
-import { useTheme } from '@mui/material/styles';
+import { Box, Typography, Button, Alert, Stack, CircularProgress, BrandMark } from '@monochrome-ui/design-system';
 import { useAppContext } from '@/hooks/useAppContext';
 
 function GoogleIcon() {
@@ -17,7 +16,6 @@ function GoogleIcon() {
 /** Centered, low-distraction sign-in surface matching Fitpal's entry screen. */
 export function AuthScreen() {
   const { loginWithGoogle, accessDenied } = useAppContext();
-  const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,33 +33,31 @@ export function AuthScreen() {
   };
 
   return (
-    <Box sx={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', bgcolor: 'background.default', px: 3, py: 4 }}>
-      <Stack spacing={4} alignItems="center" sx={{ width: '100%', maxWidth: 360 }}>
-        <Stack spacing={1.5} alignItems="center" sx={{ mb: 1 }}>
-          <Box component="img" src="/logo-black.png" alt="GameHub" sx={{ width: 64, height: 64, objectFit: 'contain', filter: theme.palette.mode === 'dark' ? 'brightness(0) invert(1)' : 'brightness(0)' }} />
-          <Typography sx={{ fontSize: 20, fontWeight: 700, letterSpacing: '-0.02em', color: 'text.primary' }}>GameHub</Typography>
+    <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', px: { xs: 3, sm: 5 } }}>
+      <Stack sx={{ width: '100%', maxWidth: 470, minHeight: { xs: '100dvh', sm: 720 }, py: { xs: 5, sm: 7 } }}>
+        <Stack direction="row" spacing={1.25} alignItems="center">
+          <BrandMark src="/logo-black.png" alt="GameHub" size={42} />
+          <Typography variant="brandName">GameHub</Typography>
         </Stack>
 
-        <Box sx={{ width: '100%', textAlign: 'center' }}>
-          <Typography variant="h2" sx={{ fontSize: 28, fontWeight: 600 }}>Sign in</Typography>
-          <Typography variant="body1" sx={{ mt: 0.5 }}>to continue to GameHub</Typography>
-        </Box>
-
-        <Box sx={{ width: '100%', py: 1 }}>
+        <Box sx={{ mt: 'auto', mb: { xs: 5, sm: 2 } }}>
+          <Typography variant="h1" sx={{ maxWidth: 430, textWrap: 'balance' }}>Your games, ready when you are</Typography>
+          <Typography variant="body1" color="text.secondary" sx={{ mt: 2.5, mb: 4.5, maxWidth: 420 }}>
+            Sign in to securely access your private game accounts and household vault.
+          </Typography>
           {accessDenied && <Alert severity="error" sx={{ mb: 2 }}>This Google account is not authorized to use GameHub.</Alert>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Button
             fullWidth
-            variant="outlined"
+            variant="primaryAction"
             onClick={handleSignIn}
             disabled={loading}
             startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <GoogleIcon />}
-            sx={{ height: 48, '&:hover': { bgcolor: 'action.hover', borderColor: 'divider' } }}
           >
             {loading ? 'Connecting…' : 'Continue with Google'}
           </Button>
-          <Typography variant="body2" sx={{ mt: 4, textAlign: 'center' }}>
-            Your data stays private to you.
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, textAlign: 'center' }}>
+            Secure sign-in · Your account details stay private
           </Typography>
         </Box>
       </Stack>

@@ -84,7 +84,7 @@ export function useUpdateProvider(uid: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, form, existing }: { id: string; form: ProviderFormData; existing?: Provider }) => providersLib.update(uid, id, form, existing),
-    onSuccess: (_data, vars) => {
+    onSuccess: (...[, vars]) => {
       qc.invalidateQueries({ queryKey: queryKeys.providers(uid) });
       qc.invalidateQueries({ queryKey: queryKeys.provider(uid, vars.id) });
     },

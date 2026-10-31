@@ -101,7 +101,14 @@ async function authenticate(req: { headers: Record<string, string | string[] | u
 }
 
 function makeServer(identity: McpIdentity) {
-  const server = new McpServer({ name: 'gamehub', version: '1.0.0' });
+  const server = new McpServer({
+    name: 'gamehub',
+    version: '1.0.0',
+    icons: [
+      { src: 'https://gamehub-app-11072026.web.app/mcp-icon-light.png', mimeType: 'image/png', sizes: ['512x512'], theme: 'light' },
+      { src: 'https://gamehub-app-11072026.web.app/mcp-icon-dark.png', mimeType: 'image/png', sizes: ['512x512'], theme: 'dark' },
+    ],
+  });
   const canWrite = identity.scope === 'write';
   const tools = createGamehubTools(identity.uid, db);
   const registerDynamicTool = server.registerTool.bind(server) as unknown as (

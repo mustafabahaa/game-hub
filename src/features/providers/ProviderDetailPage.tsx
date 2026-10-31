@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Avatar, Box, Button, CircularProgress, Divider, Stack, Typography } from '@mui/material';
-import { ArrowLeft, ExternalLink, Link as LinkIcon, MessageCircle, Trash2 } from 'lucide-react';
+import { Avatar, Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from '@monochrome-ui/design-system';
+import { ArrowLeftIcon as ArrowLeft, ExternalLinkIcon as ExternalLink, LinkIcon, MessageCircleIcon as MessageCircle, DeleteOutlineIcon as Trash2 } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useDeleteProvider, useProvider } from '@/hooks/useGamehub';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -31,10 +31,10 @@ export function ProviderDetailPage() {
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2.5} alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mb: 4 }}>
         {provider.photoUrl
-          ? <Box component="img" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ width: { xs: 104, sm: 136 }, height: { xs: 104, sm: 136 }, objectFit: 'contain', p: 1.5, boxSizing: 'border-box', borderRadius: 3, bgcolor: 'action.hover', flexShrink: 0 }} />
-          : <Avatar sx={{ width: { xs: 104, sm: 136 }, height: { xs: 104, sm: 136 }, borderRadius: 3, bgcolor: 'action.selected', color: 'text.primary', fontSize: '2.5rem', fontWeight: 800, flexShrink: 0 }}>{provider.name[0]?.toUpperCase()}</Avatar>}
+          ? <Paper component="img" variant="mediaSurface" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ width: { xs: 104, sm: 136 }, height: { xs: 104, sm: 136 }, objectFit: 'contain', p: 1.5, boxSizing: 'border-box', flexShrink: 0 }} />
+          : <Avatar variant="mediaFallbackLarge">{provider.name[0]?.toUpperCase()}</Avatar>}
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="h1" sx={{ fontSize: { xs: 28, sm: 36 }, overflowWrap: 'anywhere' }}>{provider.name}</Typography>
+          <Typography variant="pageHeading">{provider.name}</Typography>
           {provider.website && <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>{provider.website.replace(/^https?:\/\//, '')}</Typography>}
         </Box>
         {isOwner && <Button color="error" variant="outlined" startIcon={<Trash2 size={17} />} onClick={() => setConfirmDelete(true)}>Delete provider</Button>}
@@ -42,7 +42,7 @@ export function ProviderDetailPage() {
 
       <Divider />
       <Box component="section" sx={{ py: 3 }}>
-        <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>Contact</Typography>
+        <Typography variant="sectionHeading" sx={{ mb: 1 }}>Contact</Typography>
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
           {provider.website && <Button component="a" href={provider.website} target="_blank" rel="noreferrer" startIcon={<ExternalLink size={17} />}>Website</Button>}
           {provider.facebook && <Button component="a" href={provider.facebook} target="_blank" rel="noreferrer" startIcon={<LinkIcon size={17} />}>Facebook</Button>}
@@ -55,8 +55,8 @@ export function ProviderDetailPage() {
       {provider.notes && <>
         <Divider />
         <Box component="section" sx={{ py: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: 700, mb: 1 }}>My notes</Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.7 }}>{provider.notes}</Typography>
+          <Typography variant="sectionHeading" sx={{ mb: 1 }}>My notes</Typography>
+          <Typography variant="bodyNote" color="text.secondary">{provider.notes}</Typography>
         </Box>
       </>}
 

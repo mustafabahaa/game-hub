@@ -11,6 +11,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsub = () => {};
+    let authStateResolved = false;
+    const loadingTimeout = window.setTimeout(() => {
+      if (authStateResolved) return;
+      console.warn('GameHub auth state did not resolve in time; showing the signed-out screen while it continues checking.');
+      setIsAuthLoading(false);
+    }, 12_000);
 
     // Resolve a redirect sign-in (iOS Safari) first.
     authLib
@@ -21,12 +27,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
       .catch(() => {});
 
     unsub = authLib.onAuthStateChanged((u, denied) => {
+      authStateResolved = true;
+      window.clearTimeout(loadingTimeout);
       setUser(u);
       if (denied) setAccessDenied(true);
       setIsAuthLoading(false);
     });
 
-    return () => unsub();
+    return () => {
+      window.clearTimeout(loadingTimeout);
+      unsub();
+    };
   }, []);
 
   const loginWithGoogle = async () => {

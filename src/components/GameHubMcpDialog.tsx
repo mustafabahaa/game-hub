@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react';
-import { httpsCallable, getFunctions } from 'firebase/functions';
-import { Alert, Box, Button, Dialog, DialogContent, DialogTitle, IconButton, MenuItem, Select, Stack, Tooltip, Typography } from '@mui/material';
-import { Copy, KeyRound, X } from 'lucide-react';
-import { firebaseApp } from '@/config/firebase';
-
-type TokenScope = 'read' | 'write';
-type McpToken = { id: string; scope: TokenScope; createdAt: string; expiresAt: number };
+import { Alert, Box, Button, Dialog, DialogContent, DialogTitle, IconButton, MenuItem, Paper, Select, Stack, Tooltip, Typography } from '@monochrome-ui/design-system';
+import { ContentCopyIcon as Copy, KeyIcon as KeyRound, CloseIcon as X } from '@/components/AppIcon';
+import { gamehubMcpLib, type McpToken, type TokenScope } from '@/libs/gamehubMcp';
 
 /** User-managed, short-lived MCP credentials. Raw tokens are shown only once. */
 export function GameHubMcpDialog() {
@@ -17,23 +13,24 @@ export function GameHubMcpDialog() {
   const [busy, setBusy] = useState(false);
 
   const listTokens = async () => {
-    if (!firebaseApp) return;
-    const call = httpsCallable<void, { tokens: McpToken[] }>(getFunctions(firebaseApp), 'listGamehubMcpTokens');
-    const result = await call();
-    setTokens(result.data.tokens);
+    const result = await gamehubMcpLib.listTokens();
+    setTokens(result.tokens);
   };
 
   useEffect(() => {
-    if (open) void listTokens().catch((cause) => setError(cause instanceof Error ? cause.message : 'Could not load MCP credentials.'));
+    if (!open) return;
+    let active = true;
+    gamehubMcpLib.listTokens()
+      .then(({ tokens: activeTokens }) => { if (active) setTokens(activeTokens); })
+      .catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : 'Could not load MCP credentials.'); });
+    return () => { active = false; };
   }, [open]);
 
   const createToken = async () => {
-    if (!firebaseApp) return;
     setBusy(true); setError(''); setNewToken('');
     try {
-      const call = httpsCallable<{ scope: TokenScope }, { id: string; token: string; scope: TokenScope }>(getFunctions(firebaseApp), 'createGamehubMcpToken');
-      const result = await call({ scope });
-      setNewToken(result.data.token);
+      const result = await gamehubMcpLib.createToken(scope);
+      setNewToken(result.token);
       await listTokens();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not create an MCP credential.');
@@ -41,11 +38,9 @@ export function GameHubMcpDialog() {
   };
 
   const revoke = async (id: string) => {
-    if (!firebaseApp) return;
     setBusy(true); setError('');
     try {
-      const call = httpsCallable<{ id: string }, { revoked: boolean }>(getFunctions(firebaseApp), 'revokeGamehubMcpToken');
-      await call({ id });
+      await gamehubMcpLib.revokeToken(id);
       setTokens((items) => items.filter((item) => item.id !== id));
       setNewToken('');
     } catch (cause) {
@@ -56,7 +51,7 @@ export function GameHubMcpDialog() {
   return (
     <>
       <Tooltip title="MCP connections">
-        <IconButton aria-label="Manage MCP connections" onClick={() => { setError(''); setOpen(true); }} sx={{ border: '1px solid', borderColor: 'divider' }}>
+        <IconButton aria-label="Manage MCP connections" onClick={() => { setError(''); setOpen(true); }} variant="utilityAction">
           <KeyRound size={18} />
         </IconButton>
       </Tooltip>
@@ -68,15 +63,15 @@ export function GameHubMcpDialog() {
         <DialogContent sx={{ pt: 1 }}>
           <Stack spacing={2}>
             <Typography variant="body2">Connect a compatible MCP client to your GameHub data. Tokens expire after 30 days.</Typography>
-            <Box sx={{ p: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: 3, bgcolor: 'background.default' }}>
+            <Paper elevation={0} variant="metadataPanel">
               <Typography variant="caption">Server endpoint</Typography>
-              <Typography sx={{ fontFamily: 'monospace', overflowWrap: 'anywhere' }}>https://gamehub-app-11072026.web.app/mcp</Typography>
-            </Box>
+              <Typography variant="technicalValue">https://gamehub-app-11072026.web.app/mcp</Typography>
+            </Paper>
             {error && <Alert severity="error">{error}</Alert>}
             {newToken && <Alert severity="warning" sx={{ overflowWrap: 'anywhere' }}>
               Copy this token now. It will not be shown again.
               <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                <Box component="code" sx={{ flex: 1, fontSize: 12 }}>{newToken}</Box>
+                <Typography component="code" variant="codeValue" sx={{ flex: 1 }}>{newToken}</Typography>
                 <IconButton aria-label="Copy MCP token" onClick={() => void navigator.clipboard.writeText(newToken)}><Copy size={16} /></IconButton>
               </Box>
             </Alert>}
@@ -88,13 +83,13 @@ export function GameHubMcpDialog() {
             </Stack>
             <Typography variant="overline">Active tokens</Typography>
             {tokens.length === 0 && <Typography variant="body2">No active tokens.</Typography>}
-            {tokens.map((token) => <Stack key={token.id} direction="row" alignItems="center" spacing={1} sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+            {tokens.map((token) => <Paper elevation={0} variant="listRow" key={token.id} component={Stack} direction="row" alignItems="center" spacing={1} sx={{ py: 1 }}>
               <Box sx={{ flex: 1 }}>
-                <Typography variant="body2" sx={{ color: 'text.primary' }}>{token.scope === 'write' ? 'Read and write' : 'Read only'}</Typography>
+                <Typography variant="body2">{token.scope === 'write' ? 'Read and write' : 'Read only'}</Typography>
                 <Typography variant="caption">Expires {new Date(token.expiresAt).toLocaleDateString()}</Typography>
               </Box>
               <Button size="small" color="error" disabled={busy} onClick={() => void revoke(token.id)}>Revoke</Button>
-            </Stack>)}
+            </Paper>)}
             <Typography variant="caption">Write tokens can change vault data. Deletions also require per-action confirmation.</Typography>
           </Stack>
         </DialogContent>

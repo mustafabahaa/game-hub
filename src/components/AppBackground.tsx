@@ -1,4 +1,5 @@
-import { Box, type SxProps, type Theme } from '@mui/material';
+import { Paper } from '@monochrome-ui/design-system';
+import type { SxProps, Theme } from '@mui/material/styles';
 
 interface AppBackgroundProps {
   /** Kept as a compatible prop; the shared app canvas is now monochrome. */
@@ -10,14 +11,8 @@ interface AppBackgroundProps {
 }
 
 /** Flat mode-aware background shared with Fitpal's product surfaces. */
-export function AppBackground({
-  variant: _variant = 'primary',
-  amplitude: _amplitude = 1.2,
-  speed: _speed = 0.5,
-  blend: _blend = 0.6,
-  sx,
-}: AppBackgroundProps) {
+export function AppBackground({ sx }: AppBackgroundProps) {
   return (
-    <Box sx={{ position: 'fixed', inset: 0, zIndex: 0, bgcolor: 'background.default', pointerEvents: 'none', ...sx }} />
+    <Paper elevation={0} variant="appBackdrop" sx={sx} />
   );
 }

@@ -2,6 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SnackbarProvider } from 'notistack';
+import '@monochrome-ui/design-system/tokens.css';
 import { AppProvider } from '@/contexts/AppContext';
 import { ThemeModeProvider } from '@/hooks/ThemeModeProvider';
 import App from './App';

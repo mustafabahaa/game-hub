@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Alert, Box, Button, CircularProgress, Stack, Typography } from '@mui/material';
-import { Check, ShieldCheck, X } from 'lucide-react';
-import { requireAuth } from '@/config/firebase';
+import { Alert, Box, Button, CircularProgress, Paper, Stack, Typography } from '@monochrome-ui/design-system';
+import { CheckCircleIcon as Check, ShieldCheckIcon as ShieldCheck, CloseIcon as X } from '@/components/AppIcon';
+import { authLib } from '@/libs/auth';
 
 type ConsentRequest = { clientName: string; scopes: string[]; expiresAt: number };
 
@@ -29,7 +29,7 @@ export function McpAuthorizePage() {
     setSubmitting(true);
     setError('');
     try {
-      const idToken = await requireAuth().currentUser?.getIdToken();
+      const idToken = await authLib.getCurrentIdToken();
       if (!idToken) throw new Error('Sign in to GameHub to continue.');
       const response = await fetch('/mcp-auth/consent', {
         method: 'POST',
@@ -46,8 +46,8 @@ export function McpAuthorizePage() {
   };
 
   return (
-    <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', p: 2, bgcolor: 'background.default' }}>
-      <Box sx={{ width: '100%', maxWidth: 480, p: { xs: 3, sm: 5 }, bgcolor: 'background.paper', border: '1px solid', borderColor: 'divider', borderRadius: '16px' }}>
+    <Box sx={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', p: 2 }}>
+      <Paper variant="contentPanel" sx={{ width: '100%', maxWidth: 480, p: { xs: 3, sm: 5 } }}>
         <Stack spacing={2.5}>
           <ShieldCheck size={28} />
           <Box>
@@ -55,13 +55,13 @@ export function McpAuthorizePage() {
             <Typography color="text.secondary" sx={{ mt: 1 }}>Review what this app can access before continuing.</Typography>
           </Box>
           {loading ? <CircularProgress size={24} /> : error && !request ? <Alert severity="error">{error}</Alert> : request && <>
-            <Box sx={{ p: 2, bgcolor: 'background.default', border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-              <Typography fontWeight={700}>{request.clientName}</Typography>
+            <Paper variant="insetPanel">
+              <Typography variant="h6">{request.clientName}</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>Requests access to your GameHub data:</Typography>
               <Stack spacing={0.75} sx={{ mt: 1.5 }}>
                 {request.scopes.map((scope) => <Typography key={scope} variant="body2">• {scope === 'gamehub:read' ? 'Read your accounts, games, and providers' : scope === 'gamehub:write' ? 'Create and update your GameHub data' : 'Stay connected between sessions'}</Typography>)}
               </Stack>
-            </Box>
+            </Paper>
             {error && <Alert severity="error">{error}</Alert>}
             <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5}>
               <Button fullWidth variant="outlined" disabled={submitting} onClick={() => void decide('deny')} startIcon={<X size={16} />}>Deny</Button>
@@ -69,7 +69,7 @@ export function McpAuthorizePage() {
             </Stack>
           </>}
         </Stack>
-      </Box>
+      </Paper>
     </Box>
   );
 }

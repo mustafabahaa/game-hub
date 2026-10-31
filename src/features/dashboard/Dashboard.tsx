@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button } from '@mui/material';
-import { Plus, Search, Gamepad2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper } from '@monochrome-ui/design-system';
+import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useAccounts, useDeleteAccount } from '@/hooks/useGamehub';
@@ -10,6 +10,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { Account, Platform } from '@/domain/types';
 
 const PLATFORMS: ('All' | Platform)[] = ['All', 'PlayStation', 'Xbox', 'PC'];
+const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -25,13 +26,14 @@ export function Dashboard() {
   const [modalOpen, setModalOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Account | undefined>();
 
-  useEffect(() => {
-    if (searchParams.get('action') !== 'add-account') return;
-    setModalOpen(true);
+  const addAccountRequested = searchParams.get('action') === 'add-account';
+  const closeAccountModal = () => {
+    setModalOpen(false);
+    if (!addAccountRequested) return;
     const nextParams = new URLSearchParams(searchParams);
     nextParams.delete('action');
     setSearchParams(nextParams, { replace: true });
-  }, [searchParams, setSearchParams]);
+  };
 
   const filtered = useMemo(() => {
     let list = accounts ?? [];
@@ -64,7 +66,7 @@ export function Dashboard() {
         <TextField
           fullWidth value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Search accounts, emails, or games…"
-          InputProps={{ startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> }}
+          slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
         />
 
         {/* Filters */}
@@ -72,40 +74,32 @@ export function Dashboard() {
           {PLATFORMS.map((p) => (
             <Chip
               key={p} label={p} onClick={() => setPlatform(p)}
-              variant={platform === p ? 'filled' : 'outlined'}
-              sx={{
-                height: 32, fontWeight: 600, fontSize: 13,
-                bgcolor: platform === p ? 'primary.main' : 'transparent',
-                color: platform === p ? 'primary.contrastText' : 'text.secondary',
-                borderColor: 'divider',
-              }}
+              variant={platform === p ? 'filterSelected' : 'filter'}
             />
           ))}
           <Box sx={{ flex: 1 }} />
-          <Chip label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="outlined" sx={{ height: 32, fontWeight: 600 }} />
+          <Chip label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="filterAction" />
         </Stack>
 
         {/* Loading */}
         {isLoading && (
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 2.5 }}>
-            {Array.from({ length: 6 }).map((_, i) => <AccountCardSkeleton key={i} />)}
+            {SKELETON_KEYS.map((i) => <AccountCardSkeleton key={i} />)}
           </Box>
         )}
 
         {/* Empty */}
         {!isLoading && filtered.length === 0 && (
-          <Box sx={{ textAlign: 'center', py: 8, px: 3, borderRadius: '16px', border: '1px dashed', borderColor: 'divider' }}>
-            <Box sx={{ width: 72, height: 72, mx: 'auto', mb: 2, borderRadius: 3, display: 'grid', placeItems: 'center', bgcolor: 'action.selected' }}>
-              <Box sx={{ color: 'primary.main' }}><Gamepad2 size={32} /></Box>
-            </Box>
-            <Typography variant="h4" sx={{ mb: 1 }}>Your vault is empty</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3, maxWidth: 380, mx: 'auto' }}>
+          <Paper variant="emptyState">
+            <Paper variant="emptyStateIcon"><Gamepad2 size={32} /></Paper>
+            <Typography variant="emptyStateTitle" sx={{ mb: 1 }}>Your vault is empty</Typography>
+            <Typography variant="emptyStateDescription" sx={{ mb: 3, maxWidth: 380, mx: 'auto' }}>
               Add your first game account to start building your collection.
             </Typography>
             <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setModalOpen(true)}>
               Add Account
             </Button>
-          </Box>
+          </Paper>
         )}
 
         {/* Account grid — 4-up desktop, 2-up mobile. Each card ~280px+ wide. */}
@@ -122,7 +116,7 @@ export function Dashboard() {
       </Stack>
 
       {/* Modals */}
-      <AccountModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <AccountModal open={modalOpen || addAccountRequested} onClose={closeAccountModal} />
       <ConfirmDialog
         open={Boolean(toDelete)} title="Delete account?"
         message="This permanently removes the account and all its game covers."

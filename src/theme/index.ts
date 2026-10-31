@@ -1,26 +1,23 @@
-import { createTheme, type Theme } from '@mui/material/styles';
+import type { Theme } from '@mui/material/styles';
+import { createMonochromeTheme } from '@monochrome-ui/design-system/theme';
+import { designTokens } from '@monochrome-ui/design-system/tokens';
 import './types';
-import { designTokens, modeTokens, buildPalette } from './palette';
-import { buildTypography } from './typography';
-import { buildComponents } from './overrides';
 
-export { designTokens } from './palette';
-export { fontFamily } from './typography';
-export type { ModeTokens } from './palette';
-export type { PaletteColorKey } from './paletteKeys';
-export { isPaletteColorKey } from './paletteKeys';
+export { designTokens };
+export const fontFamily = designTokens.typography.fontFamily;
 
-/**
- * Create the GameHub MUI theme for a mode by composing the palette,
- * typography, and component overrides modules.
- */
+/** Apply GameHub's content-only platform labels to the shared theme. */
 export function createAppTheme(mode: 'light' | 'dark'): Theme {
-  return createTheme({
-    palette: buildPalette(mode),
-    typography: buildTypography(modeTokens(mode)),
-    // MUI sx numeric radii are multipliers of shape.borderRadius. Keep the
-    // 4px Fitpal base so sx={{ borderRadius: 4 }} resolves to the 16px card token.
-    shape: { borderRadius: designTokens.radius.subtle },
-    components: buildComponents(mode),
+  return createMonochromeTheme(mode, {
+    palette: {
+      text: { primary: mode === 'dark' ? '#FFFFFF' : '#0D0D0D' },
+      playStation: { main: '#404040', contrastText: '#FFFFFF' },
+      xbox: { main: '#525252', contrastText: '#FFFFFF' },
+      pc: { main: '#737373', contrastText: '#FFFFFF' },
+      gold: { main: '#8A8A8A', light: '#A3A3A3', contrastText: '#0D0D0D' },
+      background: {
+        surfaceOffWhite: mode === 'dark' ? designTokens.dark.surfaceOffWhite : designTokens.color.surfaceOffWhite,
+      },
+    },
   });
 }

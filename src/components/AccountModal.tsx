@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   Dialog,
+  Paper,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -15,8 +16,8 @@ import {
   FormHelperText,
   Divider,
   CircularProgress,
-} from '@mui/material';
-import { Gamepad2 } from 'lucide-react';
+} from '@monochrome-ui/design-system';
+import { GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useCreateAccount, useUpdateAccount } from '@/hooks/useGamehub';
 import type { Account, AccountFormData, AccountType, LifecycleType, Platform } from '@/domain/types';
@@ -31,33 +32,28 @@ const PLATFORMS: Platform[] = ['PlayStation', 'Xbox', 'PC'];
 const ACCOUNT_TYPES: AccountType[] = ['Primary', 'Secondary', 'Full'];
 
 export function AccountModal({ open, account, onClose }: AccountModalProps) {
+  if (!open) return null;
+  return <AccountModalContent key={account?.id ?? 'new-account'} account={account} onClose={onClose} />;
+}
+
+function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open'>) {
   const { user } = useAppContext();
   const uid = user?.uid ?? '';
   const createAccount = useCreateAccount(uid);
   const updateAccount = useUpdateAccount(uid);
 
-  const [form, setForm] = useState<AccountFormData>(emptyForm());
-
-  useEffect(() => {
-    if (open) {
-      setForm(
-        account
-          ? {
-              accountName: account.accountName,
-              email: account.email,
-              password: account.password ?? '',
-              otpSecret: account.otpSecret ?? '',
-              providerId: account.providerId ?? '',
-              accountType: account.accountType ?? null,
-              platform: account.platform,
-              isPsPlus: account.isPsPlus,
-              lifecycleType: account.lifecycleType,
-              expiresOn: account.expiresOn ?? '',
-            }
-          : emptyForm(),
-      );
-    }
-  }, [open, account]);
+  const [form, setForm] = useState<AccountFormData>(() => account ? {
+    accountName: account.accountName,
+    email: account.email,
+    password: account.password ?? '',
+    otpSecret: account.otpSecret ?? '',
+    providerId: account.providerId ?? '',
+    accountType: account.accountType ?? null,
+    platform: account.platform,
+    isPsPlus: account.isPsPlus,
+    lifecycleType: account.lifecycleType,
+    expiresOn: account.expiresOn ?? '',
+  } : emptyForm());
 
   const isEdit = Boolean(account);
   const saving = createAccount.isPending || updateAccount.isPending;
@@ -79,19 +75,13 @@ export function AccountModal({ open, account, onClose }: AccountModalProps) {
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
       <Box>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-          <Box
-            sx={{
-              width: 36, height: 36, borderRadius: 2, display: 'grid', placeItems: 'center',
-              bgcolor: 'action.selected',
-              color: 'text.primary',
-            }}
-          >
-            <Gamepad2 size={18} color="currentColor" />
-          </Box>
-          {isEdit ? 'Edit Account' : 'New Account'}
+          <Paper elevation={0} variant="iconBadge">
+            <Gamepad2 size={18} />
+          </Paper>
+          <Typography variant="dialogTitle">{isEdit ? 'Edit Account' : 'New Account'}</Typography>
         </DialogTitle>
 
         <DialogContent>
@@ -133,7 +123,7 @@ export function AccountModal({ open, account, onClose }: AccountModalProps) {
               <ToggleButtonGroup
                 exclusive
                 value={form.platform}
-                onChange={(_, v) => v && setForm({ ...form, platform: v })}
+                onChange={(event, value) => { void event; if (value) setForm({ ...form, platform: value }); }}
                 fullWidth
                 size="small"
               >
@@ -150,7 +140,7 @@ export function AccountModal({ open, account, onClose }: AccountModalProps) {
                 <ToggleButtonGroup
                   exclusive
                   value={form.accountType ?? ''}
-                  onChange={(_, v) => setForm({ ...form, accountType: (v as AccountType) || null })}
+                  onChange={(event, value) => { void event; setForm({ ...form, accountType: (value as AccountType) || null }); }}
                   fullWidth
                   size="small"
                 >
@@ -159,14 +149,16 @@ export function AccountModal({ open, account, onClose }: AccountModalProps) {
                   ))}
                 </ToggleButtonGroup>
                 <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, minHeight: 52 }}>
-                  <Box>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>PlayStation Plus</Typography>
-                    <Typography variant="caption" color="text.secondary">This account includes a PS Plus subscription</Typography>
-                  </Box>
+                  <Stack spacing={0.25} sx={{ minWidth: 0 }}>
+                    <Typography variant="settingLabel">PlayStation Plus</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      This account includes a PS Plus subscription
+                    </Typography>
+                  </Stack>
                   <Switch
                     checked={form.isPsPlus}
                     onChange={(e) => setForm({ ...form, isPsPlus: e.target.checked })}
-                    inputProps={{ 'aria-label': 'PlayStation Plus' }}
+                    slotProps={{ input: { 'aria-label': 'PlayStation Plus' } }}
                   />
                 </Box>
               </Box>
@@ -180,7 +172,7 @@ export function AccountModal({ open, account, onClose }: AccountModalProps) {
               <ToggleButtonGroup
                 exclusive
                 value={form.lifecycleType}
-                onChange={(_, v) => v && setForm({ ...form, lifecycleType: v as LifecycleType })}
+                onChange={(event, value) => { void event; if (value) setForm({ ...form, lifecycleType: value as LifecycleType }); }}
                 fullWidth
                 size="small"
               >
@@ -199,7 +191,7 @@ export function AccountModal({ open, account, onClose }: AccountModalProps) {
                   onChange={(e) => setForm({ ...form, expiresOn: e.target.value })}
                   fullWidth
                   sx={{ mt: 2 }}
-                  InputLabelProps={{ shrink: true }}
+                  slotProps={{ inputLabel: { shrink: true } }}
                 />
               )}
             </Box>

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
 import {
-  Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Card, CardActionArea,
+  Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Card, CardActionArea, Paper,
   CardContent, Pagination, Skeleton,
-} from '@mui/material';
-import { Search, Plus, Gamepad2 } from 'lucide-react';
+} from '@monochrome-ui/design-system';
+import { SearchIcon as Search, AddIcon as Plus, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useProviders } from '@/hooks/useGamehub';
@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 import type { Provider } from '@/domain/types';
 
 const PAGE_SIZE = 8;
+const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
 
 export function ProvidersPage() {
   const navigate = useNavigate();
@@ -47,10 +48,10 @@ export function ProvidersPage() {
         fullWidth value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         placeholder="Search providers…"
         sx={{ mb: 3.5 }}
-        InputProps={{ startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> }}
+        slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
       />
 
-      {isLoading && <ProviderGrid>{Array.from({ length: 6 }).map((_, i) => <ProviderCardSkeleton key={i} />)}</ProviderGrid>}
+      {isLoading && <ProviderGrid>{SKELETON_KEYS.map((i) => <ProviderCardSkeleton key={i} />)}</ProviderGrid>}
 
       {!isLoading && filtered.length === 0 && (
         providers?.length ? (
@@ -74,7 +75,7 @@ export function ProvidersPage() {
         </ProviderGrid>
         {pageCount > 1 && <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={1.5} sx={{ mt: 3 }}>
           <Typography variant="body2" color="text.secondary">Showing {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} providers</Typography>
-          <Pagination count={pageCount} page={page} onChange={(_, nextPage) => setPage(nextPage)} color="standard" aria-label="Provider pages" />
+          <Pagination count={pageCount} page={page} onChange={(event, nextPage) => { void event; setPage(nextPage); }} color="standard" aria-label="Provider pages" />
         </Stack>}
       </>}
 
@@ -96,13 +97,13 @@ function ProviderCard({ provider, onView }: ProviderCardProps) {
   return (
     <Card sx={{ overflow: 'hidden', height: '100%' }}>
       <CardActionArea onClick={onView} sx={{ display: 'flex', height: '100%', flexDirection: 'column', alignItems: 'stretch' }}>
-        <Box sx={{ width: '100%', height: { xs: 220, sm: 240, lg: 260 }, flex: '0 0 auto', display: 'grid', placeItems: 'center', bgcolor: 'action.hover', p: 2, boxSizing: 'border-box' }}>
-          {provider.photoUrl ? <Box component="img" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ display: 'block', width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: { xs: 188, sm: 208, lg: 228 }, objectFit: 'contain', objectPosition: 'center', borderRadius: 2.5 }} /> : <Avatar sx={{ width: 92, height: 92, fontSize: 36, fontWeight: 700, bgcolor: 'background.paper', color: 'text.primary' }}>{provider.name[0]?.toUpperCase()}</Avatar>}
-        </Box>
+        <Paper variant="mediaFrame" sx={{ height: { xs: 220, sm: 240, lg: 260 }, flex: '0 0 auto' }}>
+          {provider.photoUrl ? <Paper component="img" variant="mediaSurface" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: { xs: 188, sm: 208, lg: 228 }, objectPosition: 'center' }} /> : <Avatar variant="mediaFallbackCompact">{provider.name[0]?.toUpperCase()}</Avatar>}
+        </Paper>
         <CardContent sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', flex: 1, gap: .75 }}>
-          <Typography variant="h6" sx={{ fontWeight: 700 }} noWrap>{provider.name}</Typography>
+          <Typography variant="itemTitle" noWrap>{provider.name}</Typography>
           {provider.website ? <Typography variant="body2" color="text.secondary" noWrap>{provider.website.replace(/^https?:\/\//, '')}</Typography> : <Typography variant="body2" color="text.secondary">No website listed</Typography>}
-          {provider.notes && <Typography variant="body2" color="text.secondary" sx={{ mt: .5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{provider.notes}</Typography>}
+          {provider.notes && <Typography variant="bodyNote" color="text.secondary" sx={{ mt: .5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{provider.notes}</Typography>}
         </CardContent>
       </CardActionArea>
     </Card>
@@ -112,9 +113,9 @@ function ProviderCard({ provider, onView }: ProviderCardProps) {
 function ProviderCardSkeleton() {
   return (
     <Card aria-hidden="true" sx={{ overflow: 'hidden', height: '100%' }}>
-      <Box sx={{ width: '100%', height: { xs: 220, sm: 240, lg: 260 }, display: 'grid', placeItems: 'center', bgcolor: 'action.hover' }}>
-        <Skeleton variant="rounded" animation="wave" width={92} height={92} sx={{ borderRadius: 2.5, bgcolor: 'action.selected' }} />
-      </Box>
+      <Paper variant="mediaFrame" sx={{ height: { xs: 220, sm: 240, lg: 260 } }}>
+        <Skeleton variant="rounded" animation="wave" width={92} height={92} />
+      </Paper>
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
         <Skeleton variant="text" animation="wave" width="65%" height={28} />
         <Skeleton variant="text" animation="wave" width="48%" height={20} />
