@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper } from '@monochrome-ui/design-system';
+import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper, PageHeader } from '@monochrome-ui/design-system';
 import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
@@ -50,17 +50,11 @@ export function Dashboard() {
     <Box sx={{ width: '100%' }}>
       <Stack spacing={3}>
         {/* Header */}
-        <Stack direction="row" alignItems="center" justifyContent="space-between" gap={2}>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="h1">Your Vault</Typography>
-            <Typography variant="body2" sx={{ mt: 0.5 }}>
-              {accounts?.length ?? 0} {(accounts?.length ?? 0) === 1 ? 'account' : 'accounts'} · all platforms
-            </Typography>
-          </Box>
-          <Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setModalOpen(true)} sx={{ flexShrink: 0 }}>
-            Add Account
-          </Button>
-        </Stack>
+        <PageHeader
+          title="Your Vault"
+          subtitle={`${accounts?.length ?? 0} ${(accounts?.length ?? 0) === 1 ? 'account' : 'accounts'} · all platforms`}
+          action={<Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setModalOpen(true)}>Add Account</Button>}
+        />
 
         {/* Search */}
         <TextField

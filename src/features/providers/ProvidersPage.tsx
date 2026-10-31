@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Card, CardActionArea, Paper,
-  CardContent, Pagination, Skeleton,
+  CardContent, Pagination, Skeleton, PageHeader,
 } from '@monochrome-ui/design-system';
 import { SearchIcon as Search, AddIcon as Plus, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useNavigate } from 'react-router-dom';
@@ -34,15 +34,11 @@ export function ProvidersPage() {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3.5, flexWrap: 'wrap', gap: 2 }}>
-        <Box>
-          <Typography variant="h1">Providers</Typography>
-          <Typography variant="body2" sx={{ mt: 0.75 }}>{providers?.length ?? 0} saved providers</Typography>
-        </Box>
-        <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => { setEditProvider(undefined); setModalOpen(true); }}>
-          Add Provider
-        </Button>
-      </Stack>
+      <PageHeader
+        title="Providers"
+        subtitle={`${providers?.length ?? 0} saved providers`}
+        action={<Button variant="contained" startIcon={<Plus size={16} />} onClick={() => { setEditProvider(undefined); setModalOpen(true); }}>Add Provider</Button>}
+      />
 
       <TextField
         fullWidth value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
