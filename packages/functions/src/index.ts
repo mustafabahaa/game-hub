@@ -143,7 +143,7 @@ function makeServer(identity: McpIdentity) {
   return server;
 }
 
-export const gamehubMcp = onRequest({ cors: false }, async (req, res) => {
+export const gamehubMcp = onRequest({ cors: false, invoker: 'public' }, async (req, res) => {
   if (req.method !== 'POST') { res.set('Allow', 'POST').status(405).send('Method Not Allowed'); return; }
   let identity: McpIdentity | null;
   try { identity = await authenticate(req); } catch { res.status(503).send('Authentication service unavailable'); return; }
