@@ -11,7 +11,7 @@ import { runHarness, type ClientTool } from './aiHarness.js';
 import { createGamehubTools } from './gamehubTools.js';
 import { requireOwner } from './ownerAuth.js';
 import {
-  disconnectProviderCredential, gamehubAiEncryptionKey, hasProviderCredential, vercelSandboxToken, withProviderCredential,
+  disconnectProviderCredential, gamehubAiEncryptionKey, hasProviderCredential, withProviderCredential,
 } from './aiCredentialStore.js';
 
 type ProviderRequest = { provider?: string };
@@ -181,7 +181,7 @@ export const resolveGamehubAiToolApproval = onCall(async (request) => {
 });
 
 export const streamGamehubAiReply = onCall(
-  { secrets: [gamehubAiEncryptionKey, vercelSandboxToken], timeoutSeconds: 240, memory: '1GiB', maxInstances: 5 },
+  { secrets: [gamehubAiEncryptionKey], timeoutSeconds: 240, memory: '1GiB', maxInstances: 5 },
   async (request, response) => {
     const uid = userId(request);
     const message = request.data?.message;

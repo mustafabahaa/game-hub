@@ -4,12 +4,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { HttpsError } from 'firebase-functions/v2/https';
-import {
-  vercelSandboxProjectId,
-  vercelSandboxTeamId,
-  withProviderCredential,
-  type ProviderCredential,
-} from './aiCredentialStore.js';
+import { withProviderCredential, type ProviderCredential } from './aiCredentialStore.js';
 
 export type ClientTool = { name: string; description: string; schema: object };
 export type HarnessRequest = {
@@ -49,9 +44,6 @@ export async function runHarness(uid: string, request: HarnessRequest): Promise<
           LANG: 'C.UTF-8',
           HOME: home,
           CODEX_HOME: home,
-          ...(process.env.VERCEL_API_TOKEN ? { VERCEL_API_TOKEN: process.env.VERCEL_API_TOKEN } : {}),
-          VERCEL_SANDBOX_TEAM_ID: vercelSandboxTeamId.value(),
-          VERCEL_SANDBOX_PROJECT_ID: vercelSandboxProjectId.value(),
         },
         stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
       });

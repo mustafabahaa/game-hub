@@ -13,7 +13,6 @@
   "dependencies": {
     "@ai-sdk/harness": "^1.0.169",
     "@ai-sdk/harness-codex": "^1.0.169",
-    "@ai-sdk/sandbox-vercel": "^1.0.169",
     "@modelcontextprotocol/sdk": "^1.32.2",
     "@openai/codex": "^0.160.1",
     "ai": "^7.0.21",
@@ -22,12 +21,6 @@
     "firebase-functions": "^7.4.0",
     "ws": "^8.21.0",
     "zod": "^4.4.3"
-  },
-  "overrides": {
-    "@vercel/oidc": "4.0.5",
-    "@vercel/cli-config": {
-      "zod": "4.6.7"
-    }
   },
   "devDependencies": {
     "@types/express": "^5.0.6",

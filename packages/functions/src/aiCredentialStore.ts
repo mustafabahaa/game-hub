@@ -1,12 +1,9 @@
 import { randomBytes, createCipheriv, createDecipheriv } from 'node:crypto';
 import { getFirestore } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { defineSecret, defineString } from 'firebase-functions/params';
+import { defineSecret } from 'firebase-functions/params';
 
 export const gamehubAiEncryptionKey = defineSecret('GAMEHUB_AI_ENCRYPTION_KEY');
-export const vercelSandboxToken = defineSecret('VERCEL_API_TOKEN');
-export const vercelSandboxTeamId = defineString('VERCEL_SANDBOX_TEAM_ID');
-export const vercelSandboxProjectId = defineString('VERCEL_SANDBOX_PROJECT_ID');
 export type AiProvider = 'codex';
 export type ProviderCredential = Record<string, unknown>;
 

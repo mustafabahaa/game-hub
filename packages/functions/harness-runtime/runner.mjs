@@ -1,11 +1,20 @@
 // A separate process gives every request its own CODEX_HOME, avoiding global
 // environment races between concurrently executing Cloud Function requests.
+import { createRequire } from 'node:module';
 import { createServer } from 'node:net';
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { HarnessAgent } from '@ai-sdk/harness/agent';
 import { createCodex } from '@ai-sdk/harness-codex';
-import { createVercelNetworkSandboxSession } from '@ai-sdk/sandbox-vercel';
 import { jsonSchema } from 'ai';
+import { createLocalProbeSandbox } from './local-sandbox.mjs';
+
+const require = createRequire(import.meta.url);
+const entry = require.resolve('@ai-sdk/harness-codex');
+const packageDir = dirname(dirname(entry));
+const wsDir = dirname(require.resolve('ws/package.json'));
+const codexDir = dirname(require.resolve('@openai/codex/package.json'));
 const pending = new Map();
 let started = false;
 let activeSandbox;
@@ -37,26 +46,40 @@ process.on('message', async (message) => {
   let session;
   let stage = 'bootstrap';
   try {
+    const [bridgePackage, bridgeFile] = await Promise.all([
+      readFile(join(packageDir, 'dist/bridge/package.json'), 'utf8'),
+      readFile(join(packageDir, 'dist/bridge/index.mjs'), 'utf8'),
+    ]);
+    const bridge = bridgeFile.replace('host: "0.0.0.0"', 'host: "127.0.0.1"');
     const port = await freePort();
-    sandbox = await createVercelNetworkSandboxSession({
-      token: process.env.VERCEL_API_TOKEN,
-      teamId: process.env.VERCEL_SANDBOX_TEAM_ID,
-      projectId: process.env.VERCEL_SANDBOX_PROJECT_ID,
-      runtime: 'node24',
-      ports: [port],
-      timeout: 4 * 60 * 1000,
-      networkPolicy: {
-        allow: ['auth.openai.com', 'chatgpt.com', 'registry.npmjs.org', 'registry.npmjs.com'],
-      },
-    });
+    sandbox = await createLocalProbeSandbox({ port });
     activeSandbox = sandbox;
     stage = 'agent';
-    const harness = createCodex({
+    const native = createCodex({
       auth: 'direct',
       startupTimeoutMs: 45000,
       reasoningEffort: 'medium',
       codexConfig: { cli_auth_credentials_store: 'file' },
     });
+    const harness = {
+      ...native,
+      async getBootstrap() {
+        const bootstrapDir = '.harness-bootstrap/codex';
+        return {
+          harnessId: 'codex',
+          bootstrapDir,
+          files: [
+            { path: `${bootstrapDir}/package.json`, content: bridgePackage },
+            { path: `${bootstrapDir}/bridge.mjs`, content: bridge },
+          ],
+          commands: [
+            {
+              command: `mkdir -p node_modules/@openai && ln -s ${shellQuote(wsDir)} node_modules/ws && ln -s ${shellQuote(codexDir)} node_modules/@openai/codex`,
+            },
+          ],
+        };
+      },
+    };
     const tools = Object.fromEntries(
       message.tools.map((definition) => [
         definition.name,
@@ -111,6 +134,9 @@ process.on('message', async (message) => {
   }
 });
 
+function shellQuote(value) {
+  return `'${String(value).replaceAll("'", "'\\''")}'`;
+}
 function freePort() {
   return new Promise((resolve, reject) => {
     const server = createServer();
