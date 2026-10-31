@@ -6,6 +6,7 @@ import { AppContext, type AppContextValue } from './appContextInstance';
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<GameHubUser | null>(null);
   const [isAuthLoading, setIsAuthLoading] = useState(true);
+  const [accessDenied, setAccessDenied] = useState(false);
   const qc = useQueryClient();
 
   useEffect(() => {
@@ -19,15 +20,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
       })
       .catch(() => {});
 
-    unsub = authLib.onAuthStateChanged((u) => {
+    unsub = authLib.onAuthStateChanged((u, denied) => {
       setUser(u);
+      if (denied) setAccessDenied(true);
       setIsAuthLoading(false);
     });
 
     return () => unsub();
   }, []);
 
-  const loginWithGoogle = () => authLib.signInWithGoogle();
+  const loginWithGoogle = async () => {
+    try {
+      const signedIn = await authLib.signInWithGoogle();
+      if (signedIn) {
+        setAccessDenied(false);
+        setUser(signedIn);
+      }
+      return signedIn;
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'gamehub/access-denied') setAccessDenied(true);
+      throw error;
+    }
+  };
 
   const logout = async () => {
     await authLib.logout();
@@ -35,7 +49,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const value: AppContextValue = { user, isAuthLoading, loginWithGoogle, logout };
+  const value: AppContextValue = { user, isAuthLoading, accessDenied, loginWithGoogle, logout };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

@@ -7,7 +7,8 @@
     "node": "22"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "owner-access": "node scripts/set-gamehub-owner.mjs"
   },
   "dependencies": {
     "@ai-sdk/harness": "^1.0.169",

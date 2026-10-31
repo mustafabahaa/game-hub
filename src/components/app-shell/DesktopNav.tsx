@@ -1,12 +1,10 @@
 import { Box, ButtonBase, Tooltip } from '@mui/material';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Gamepad2, Store, Users, Globe, Plus } from 'lucide-react';
+import { Gamepad2, Store, Plus } from 'lucide-react';
 
 const ITEMS = [
   { path: '/', label: 'Vault', icon: Gamepad2 },
   { path: '/providers', label: 'Providers', icon: Store },
-  { path: '/friends', label: 'Friends', icon: Users },
-  { path: '/community', label: 'Community', icon: Globe },
 ];
 
 /** Fitpal-style fixed navigation rail for desktop and tablet workspaces. */

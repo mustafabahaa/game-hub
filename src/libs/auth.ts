@@ -29,10 +29,30 @@ function toGameHubUser(user: User): GameHubUser {
   };
 }
 
+async function hasOwnerClaim(user: User, forceRefresh = false): Promise<boolean> {
+  const token = await user.getIdTokenResult(forceRefresh);
+  return token.claims.owner === true;
+}
+
+function accessDeniedError() {
+  return Object.assign(new Error('This Google account is not authorized to use GameHub.'), { code: 'gamehub/access-denied' });
+}
+
 export const authLib = {
   /** Subscribe to auth state. Returns an unsubscribe fn. */
-  onAuthStateChanged(cb: (user: GameHubUser | null) => void) {
-    return fsOnAuthStateChanged(requireAuth(), (u) => cb(u ? toGameHubUser(u) : null));
+  onAuthStateChanged(cb: (user: GameHubUser | null, denied?: boolean) => void) {
+    return fsOnAuthStateChanged(requireAuth(), async (user) => {
+      if (!user) { cb(null); return; }
+      try {
+        if (await hasOwnerClaim(user)) { cb(toGameHubUser(user)); return; }
+        cb(null, true);
+        await fsSignOut(requireAuth());
+      } catch (error) {
+        console.error('Could not verify GameHub owner access:', error);
+        cb(null);
+        await fsSignOut(requireAuth()).catch(() => undefined);
+      }
+    });
   },
 
   /** Google sign-in via popup, falling back to redirect on iOS Safari popup-block. */
@@ -41,6 +61,10 @@ export const authLib = {
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(a, provider);
+      if (!(await hasOwnerClaim(result.user, true))) {
+        await fsSignOut(a);
+        throw accessDeniedError();
+      }
       return toGameHubUser(result.user);
     } catch (error) {
       const code = (error as { code?: string })?.code;
@@ -56,6 +80,10 @@ export const authLib = {
   async handleRedirectResult(): Promise<GameHubUser | null> {
     try {
       const result = await getRedirectResult(requireAuth());
+      if (result?.user && !(await hasOwnerClaim(result.user, true))) {
+        await fsSignOut(requireAuth());
+        throw accessDeniedError();
+      }
       return result?.user ? toGameHubUser(result.user) : null;
     } catch {
       return null;

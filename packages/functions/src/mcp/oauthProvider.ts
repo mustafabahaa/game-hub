@@ -146,9 +146,8 @@ function clientReference(clientId: string) {
 }
 
 /**
- * GameHub credentials are user-scoped (all data lives under users/{uid}), so
- * the only standing requirement is that the Firebase account is still
- * enabled — rechecked on every token exchange and verification.
+ * OAuth codes and credentials stay usable only while the Firebase account is
+ * enabled and still carries the server-provisioned GameHub owner claim.
  */
 async function requireEnabledUser(userId: string): Promise<void> {
   let authUser;
@@ -157,7 +156,7 @@ async function requireEnabledUser(userId: string): Promise<void> {
   } catch {
     throw new InvalidGrantError('The authorized account is no longer available');
   }
-  if (authUser.disabled) {
+  if (authUser.disabled || authUser.customClaims?.owner !== true) {
     throw new InvalidGrantError('The authorized account is no longer available');
   }
 }

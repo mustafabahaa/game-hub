@@ -5,17 +5,15 @@ rules_version = '2';
 // - Game covers:      users/{uid}/gameImages/{accountId}/{imageId}.jpg
 // - Provider photos:  users/{uid}/providerPhotos/{providerId}/{imageId}.jpg
 //
-// Images are public-read (they're shown across the app via download URLs),
-// owner-write only.
+// Vault images are private and accessible only to their owner.
 
 service firebase.storage {
   match /b/{bucket}/o {
-    function isSignedIn() { return request.auth != null; }
+    function isOwner() { return request.auth != null && request.auth.token.owner == true; }
     function uid() { return request.auth.uid; }
 
     match /users/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if isSignedIn() && userId == uid();
+      allow read, write: if isOwner() && userId == uid();
     }
 
     // Deny everything else by default.

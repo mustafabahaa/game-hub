@@ -4,8 +4,8 @@
  * Two path shapes:
  * - Per-user (private): `users/{uid}/{collection}/{docId}` — accounts, games
  *   (nested under accounts), etc.
- * - Global (public/social): top-level collections — `providers`, `profiles`,
- *   `friendRequests`, `publicGames`, `sharedAccounts`.
+ * - User-owned provider directory entries: `providers` docs include `userId`
+ *   and are filtered and security-ruled to that owner.
  */
 import {
   doc,
@@ -17,14 +17,10 @@ import {
   query,
   orderBy,
   limit as fsLimit,
-  startAfter,
   where,
-  onSnapshot,
   type DocumentData,
-  type Unsubscribe,
   type WhereFilterOp,
   type OrderByDirection,
-  type QueryDocumentSnapshot,
 } from 'firebase/firestore';
 import { requireDb } from '@/config/firebase';
 
@@ -69,14 +65,6 @@ export interface ListOptions {
   limit?: number;
 }
 
-export type PageCursor = QueryDocumentSnapshot<DocumentData>;
-
-export interface CursorPage<T> {
-  items: T[];
-  nextCursor: PageCursor | null;
-  hasMore: boolean;
-}
-
 /** List a collection with optional filters + ordering. */
 export async function listDocs<T>(
   collectionPath: string,
@@ -96,32 +84,6 @@ export async function listDocs<T>(
   const q = query(collection(db, collectionPath), ...constraints);
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T);
-}
-
-/** Fetch one cursor-based page without reading the rest of a collection. */
-export async function listDocsPage<T>(
-  collectionPath: string,
-  pageSize: number,
-  options: Omit<ListOptions, 'limit'>,
-  cursor?: PageCursor | null,
-): Promise<CursorPage<T>> {
-  const db = requireDb();
-  const constraints = [];
-  if (options.wheres) {
-    for (const w of options.wheres) constraints.push(where(w.field, w.op, w.value as never));
-  }
-  if (options.orderField) constraints.push(orderBy(options.orderField, options.orderDirection ?? 'desc'));
-  if (cursor) constraints.push(startAfter(cursor));
-  constraints.push(fsLimit(pageSize + 1));
-
-  const snap = await getDocs(query(collection(db, collectionPath), ...constraints));
-  const hasMore = snap.docs.length > pageSize;
-  const pageDocs = snap.docs.slice(0, pageSize);
-  return {
-    items: pageDocs.map((d) => ({ id: d.id, ...d.data() }) as T),
-    nextCursor: hasMore ? pageDocs[pageDocs.length - 1] ?? null : null,
-    hasMore,
-  };
 }
 
 /** Upsert a doc by id (merge: true, fitpal convention). */
@@ -148,37 +110,4 @@ export async function deleteDocById(collectionPath: string, docId: string): Prom
 export async function deleteByPath(path: string): Promise<void> {
   const db = requireDb();
   await fsDeleteDoc(doc(db, path));
-}
-
-/* ---------- realtime (onSnapshot) — replaces Supabase realtime ---------- */
-
-/** Watch a whole collection; callback fires on every change. */
-export function watchCollection<T>(
-  collectionPath: string,
-  cb: (items: T[]) => void,
-  options?: ListOptions,
-): Unsubscribe {
-  const db = requireDb();
-  const constraints = [];
-  if (options?.wheres) {
-    for (const w of options.wheres) {
-      constraints.push(where(w.field, w.op, w.value as never));
-    }
-  }
-  if (options?.orderField) {
-    constraints.push(orderBy(options.orderField, options.orderDirection ?? 'desc'));
-  }
-  const q = query(collection(db, collectionPath), ...constraints);
-  return onSnapshot(
-    q,
-    (snap) => cb(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as T)),
-  );
-}
-
-/** Watch a single doc by path. */
-export function watchPath<T>(path: string, cb: (item: T | undefined) => void): Unsubscribe {
-  const db = requireDb();
-  return onSnapshot(doc(db, path), (snap) =>
-    cb(snap.exists() ? ({ id: snap.id, ...snap.data() } as T) : undefined),
-  );
 }

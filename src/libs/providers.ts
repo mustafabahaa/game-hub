@@ -1,6 +1,6 @@
 /**
- * Providers data-access. Providers are GLOBAL (public read) — `providers/{providerId}`.
- * Owner-gated for writes via security rules.
+ * Provider records live in the top-level collection for compatibility, but
+ * every read is scoped to the creating user and enforced by Firestore rules.
  */
 import { listDocs, getDocById, setDocById, deleteDocById } from './db';
 import { uploadImage, deleteByUrl } from './storage';
@@ -9,15 +9,18 @@ import type { Provider, ProviderFormData } from '@/domain/types';
 const COLLECTION = 'providers';
 
 export const providersLib = {
-  async getAll(): Promise<Provider[]> {
+  async getAll(uid: string): Promise<Provider[]> {
     return listDocs<Provider>(COLLECTION, {
+      wheres: [{ field: 'userId', op: '==', value: uid }],
       orderField: 'name',
       orderDirection: 'asc',
     });
   },
 
-  async getById(id: string): Promise<Provider | undefined> {
-    return getDocById<Provider>(COLLECTION, id);
+  async getById(uid: string, id: string): Promise<Provider | undefined> {
+    const provider = await getDocById<Provider>(COLLECTION, id);
+    if (provider?.userId !== uid) return undefined;
+    return provider;
   },
 
   async create(uid: string, form: ProviderFormData): Promise<string> {

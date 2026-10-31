@@ -15,9 +15,6 @@ const Dashboard = lazy(() => import('@/features/dashboard/Dashboard').then((m) =
 const AccountDetailPage = lazy(() => import('@/features/accounts/AccountDetailPage').then((m) => ({ default: m.AccountDetailPage })));
 const ProvidersPage = lazy(() => import('@/features/providers/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
 const ProviderDetailPage = lazy(() => import('@/features/providers/ProviderDetailPage').then((m) => ({ default: m.ProviderDetailPage })));
-const FriendsPage = lazy(() => import('@/features/friends/FriendsPage').then((m) => ({ default: m.FriendsPage })));
-const CommunityPage = lazy(() => import('@/features/community/CommunityPage').then((m) => ({ default: m.CommunityPage })));
-const CommunityProfilePage = lazy(() => import('@/features/community/CommunityProfilePage').then((m) => ({ default: m.CommunityProfilePage })));
 
 function AppLoadingScreen() {
   return (
@@ -74,9 +71,6 @@ export default function App() {
             <Route path="accounts/:id" element={<Suspense fallback={<AppLoadingScreen />}><AccountDetailPage /></Suspense>} />
             <Route path="providers" element={<Suspense fallback={<AppLoadingScreen />}><ProvidersPage /></Suspense>} />
             <Route path="providers/:id" element={<Suspense fallback={<AppLoadingScreen />}><ProviderDetailPage /></Suspense>} />
-            <Route path="friends" element={<Suspense fallback={<AppLoadingScreen />}><FriendsPage /></Suspense>} />
-            <Route path="community" element={<Suspense fallback={<AppLoadingScreen />}><CommunityPage /></Suspense>} />
-            <Route path="community/:ownerUid" element={<Suspense fallback={<AppLoadingScreen />}><CommunityProfilePage /></Suspense>} />
             <Route path="auth" element={<Navigate to="/" replace />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>

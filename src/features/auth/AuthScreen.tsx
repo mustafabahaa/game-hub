@@ -16,7 +16,7 @@ function GoogleIcon() {
 
 /** Centered, low-distraction sign-in surface matching Fitpal's entry screen. */
 export function AuthScreen() {
-  const { loginWithGoogle } = useAppContext();
+  const { loginWithGoogle, accessDenied } = useAppContext();
   const theme = useTheme();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,6 +27,7 @@ export function AuthScreen() {
     try {
       await loginWithGoogle();
     } catch (e) {
+      if ((e as { code?: string })?.code === 'gamehub/access-denied') return;
       setError((e as Error)?.message ?? 'Failed to sign in.');
     } finally {
       setLoading(false);
@@ -47,6 +48,7 @@ export function AuthScreen() {
         </Box>
 
         <Box sx={{ width: '100%', py: 1 }}>
+          {accessDenied && <Alert severity="error" sx={{ mb: 2 }}>This Google account is not authorized to use GameHub.</Alert>}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           <Button
             fullWidth

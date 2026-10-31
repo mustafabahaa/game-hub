@@ -9,6 +9,7 @@ import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 import { runHarness, type ClientTool } from './aiHarness.js';
 import { createGamehubTools } from './gamehubTools.js';
+import { requireOwner } from './ownerAuth.js';
 import {
   disconnectProviderCredential, gamehubAiEncryptionKey, hasProviderCredential, vercelSandboxToken, withProviderCredential,
 } from './aiCredentialStore.js';
@@ -19,8 +20,7 @@ const provider = (value: string | undefined): 'codex' => {
   return 'codex';
 };
 function userId(request: { auth?: { uid?: string } }) {
-  if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in is required');
-  return request.auth.uid;
+  return requireOwner(request);
 }
 const runtimeRequire = createRequire(import.meta.url);
 
@@ -199,8 +199,8 @@ export const streamGamehubAiReply = onCall(
     }));
     const system = [
       'You are the GameHub assistant. Help the signed-in user organize their game accounts, library, and providers.',
-      'Use GameHub tools when relevant. They expose the signed-in user’s private data, public providers and reviews, friend connections, account sharing, and public community profiles/games. They never return or accept password or OTP secret values.',
-      'For delete and account-share tools, pass confirm: true only to request the GameHub confirmation prompt; this field alone never approves the action. The server waits for the user to approve every change in GameHub. Do not say a change is complete until the server returns success.',
+      'Use GameHub tools when relevant. They expose only the signed-in user’s private accounts, games, and saved providers. They never return or accept password or OTP secret values.',
+      'For delete tools, pass confirm: true only to request the GameHub confirmation prompt; this field alone never approves the action. The server waits for the user to approve every change in GameHub. Do not say a change is complete until the server returns success.',
       'Keep answers clear and concise.',
     ].join(' ');
     try {

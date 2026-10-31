@@ -16,6 +16,7 @@ export {
 } from './aiConnection.js';
 import { GamehubOAuthProvider } from './mcp/oauthProvider.js';
 import { createGamehubTools } from './gamehubTools.js';
+import { requireOwner } from './ownerAuth.js';
 
 initializeApp();
 const db = getFirestore();
@@ -27,9 +28,8 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('hex');
 }
 
-function requireUid(request: { auth?: { uid: string } | null }): string {
-  if (!request.auth?.uid) throw new HttpsError('unauthenticated', 'Sign in to manage MCP credentials.');
-  return request.auth.uid;
+function requireUid(request: { auth?: { uid?: string; token?: object } | null }): string {
+  return requireOwner(request);
 }
 
 export const createGamehubMcpToken = onCall(async (request) => {
@@ -72,6 +72,8 @@ async function authenticate(req: { headers: Record<string, string | string[] | u
       const auth = await oauthProvider.verifyAccessToken(token);
       const uid = auth.extra?.userId;
       if (typeof uid !== 'string') return null;
+      const user = await getAuth().getUser(uid);
+      if (user.disabled || user.customClaims?.owner !== true) return null;
       return { uid, scope: auth.scopes.includes('gamehub:write') ? 'write' : 'read' };
     } catch {
       return null;
@@ -90,7 +92,8 @@ async function authenticate(req: { headers: Record<string, string | string[] | u
   const expiresAt = record.get('expiresAt');
   if (typeof userId !== 'string' || (scope !== 'read' && scope !== 'write') || typeof expiresAt !== 'number' || expiresAt <= Date.now()) return null;
   try {
-    if ((await getAuth().getUser(userId)).disabled) return null;
+    const user = await getAuth().getUser(userId);
+    if (user.disabled || user.customClaims?.owner !== true) return null;
   } catch {
     return null;
   }

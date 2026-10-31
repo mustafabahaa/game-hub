@@ -10,7 +10,7 @@ import { GameHubMcpDialog } from '@/components/GameHubMcpDialog';
 import { areGamehubFunctionsEnabled } from '@/config/firebase';
 
 const SECTIONS: Array<[string, string]> = [
-  ['/', 'Vault'], ['/providers', 'Providers'], ['/friends', 'Friends'], ['/community', 'Community'],
+  ['/', 'Vault'], ['/providers', 'Providers'],
 ];
 
 export function TopBar() {

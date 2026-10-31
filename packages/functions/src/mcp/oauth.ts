@@ -88,7 +88,12 @@ export function createOAuthApp() {
     try {
       // Initialize the default Admin app before getAuth() resolves its instance.
       getDb();
-      uid = (await getAuth().verifyIdToken(bearer, true)).uid;
+      const decoded = await getAuth().verifyIdToken(bearer, true);
+      if (decoded.owner !== true) {
+        res.status(403).json({ error: 'access_denied', message: 'This GameHub account is not authorized.' });
+        return;
+      }
+      uid = decoded.uid;
     } catch {
       res.status(401).json({ error: 'unauthorized', message: 'Sign in to GameHub again to continue.' });
       return;

@@ -8,8 +8,6 @@ import { BottomNav } from './BottomNav';
 const PAGE_TITLES: Record<string, string> = {
   '/': 'GameHub — Your Vault',
   '/providers': 'GameHub — Providers',
-  '/friends': 'GameHub — Friends',
-  '/community': 'GameHub — Community',
 };
 
 /** Layout route — renders the nav chrome and the active page via <Outlet/>. */

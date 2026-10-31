@@ -3,7 +3,7 @@ import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button } from 
 import { Plus, Search, Gamepad2 } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
-import { useAccounts, useSharedAccounts, useEnsureProfile, useDeleteAccount } from '@/hooks/useGamehub';
+import { useAccounts, useDeleteAccount } from '@/hooks/useGamehub';
 import { AccountCard, AccountCardSkeleton } from '@/components/AccountCard';
 import { AccountModal } from '@/components/AccountModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -17,8 +17,6 @@ export function Dashboard() {
   const { user } = useAppContext();
   const uid = user?.uid;
   const { data: accounts, isLoading } = useAccounts(uid);
-  const { data: shared } = useSharedAccounts(uid);
-  const ensureProfile = useEnsureProfile();
   const deleteAccount = useDeleteAccount(uid ?? '');
 
   const [search, setSearch] = useState('');
@@ -35,13 +33,6 @@ export function Dashboard() {
     setSearchParams(nextParams, { replace: true });
   }, [searchParams, setSearchParams]);
 
-  useEffect(() => {
-    if (uid && user) {
-      ensureProfile.mutate({ uid, partial: { displayName: user.displayName, avatarUrl: user.photoURL ?? null } });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [uid]);
-
   const filtered = useMemo(() => {
     let list = accounts ?? [];
     if (platform !== 'All') list = list.filter((a) => a.platform === platform);
@@ -52,20 +43,6 @@ export function Dashboard() {
     if (sort === 'name') list = [...list].sort((a, b) => a.accountName.localeCompare(b.accountName));
     return list;
   }, [accounts, platform, search, sort]);
-
-  const sharedAccounts = useMemo(
-    () => (shared ?? []).map((s) => ({
-      id: s.id, accountName: s.account.accountName, email: s.account.email,
-      platform: s.account.platform, isPsPlus: s.account.isPsPlus,
-      accountType: null, providerId: null,
-      password: s.account.password ?? null, otpSecret: s.account.otpSecret ?? null,
-      lifecycleType: 'lifetime' as const,
-      games: s.games.map((g) => ({ id: g.id, title: g.title, imageUrl: g.imageUrl ?? null, accountId: '', createdAt: '' })),
-      canViewPassword: s.canViewPassword, canViewOtp: s.canViewOtp,
-      sharedByName: null, createdAt: s.createdAt, updatedAt: s.createdAt,
-    })),
-    [shared],
-  );
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -142,19 +119,6 @@ export function Dashboard() {
           </Box>
         )}
 
-        {/* Shared */}
-        {!isLoading && sharedAccounts.length > 0 && (
-          <Box>
-            <Typography variant="overline" sx={{ display: 'block', mb: 2 }}>Shared with you</Typography>
-            <Box sx={{ columnCount: { xs: 2, sm: 3, lg: 4 }, columnGap: '20px' }}>
-              {sharedAccounts.map((account) => (
-                <Box key={account.id} sx={{ display: 'inline-block', width: '100%', mb: '20px', breakInside: 'avoid', verticalAlign: 'top' }}>
-                  <AccountCard account={account} shared onView={() => navigate(`/accounts/${account.id}`)} />
-                </Box>
-              ))}
-            </Box>
-          </Box>
-        )}
       </Stack>
 
       {/* Modals */}

@@ -18,12 +18,10 @@ import { getLifecycleLabel, isAccountExpired } from '@/domain/lifecycle';
  */
 interface AccountCardProps {
   account: Account;
-  shared?: boolean;
-  onView?: (account: Account) => void;
   onDelete?: (account: Account) => void;
 }
 
-export function AccountCard({ account, shared, onView, onDelete }: AccountCardProps) {
+export function AccountCard({ account, onDelete }: AccountCardProps) {
   const [expanded, setExpanded] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -71,7 +69,7 @@ export function AccountCard({ account, shared, onView, onDelete }: AccountCardPr
           )}
         </Stack>
 
-        {!shared && onDelete && (
+        {onDelete && (
           <IconButton
             aria-label={`Actions for ${account.accountName}`}
             onClick={(event) => { event.stopPropagation(); setMenuAnchor(event.currentTarget); }}
@@ -145,13 +143,13 @@ export function AccountCard({ account, shared, onView, onDelete }: AccountCardPr
               <CredField icon={<Mail size={13} />} label="Email" value={account.email} />
               <CredField
                 icon={<KeyRound size={13} />} label="Password"
-                value={account.password ?? (shared && !account.canViewPassword ? 'Hidden by owner' : '—')}
+                value={account.password ?? '—'}
                 masked={!showPass && Boolean(account.password)}
                 onToggleMask={() => setShowPass((v) => !v)}
               />
               <CredField
                 icon={<ShieldCheck size={13} />} label="OTP"
-                value={account.otpSecret ?? (shared && !account.canViewOtp ? 'Hidden by owner' : '—')}
+                value={account.otpSecret ?? '—'}
                 masked={!showOtp && Boolean(account.otpSecret)}
                 onToggleMask={() => setShowOtp((v) => !v)}
               />
@@ -159,11 +157,6 @@ export function AccountCard({ account, shared, onView, onDelete }: AccountCardPr
           </Collapse>
         </Box>
 
-        {shared && onView && (
-          <Button fullWidth variant="contained" size="small" onClick={(e) => { e.stopPropagation(); onView(account); }}>
-            View Details
-          </Button>
-        )}
       </CardContent>
     </Card>
   );

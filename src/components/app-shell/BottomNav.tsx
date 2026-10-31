@@ -1,12 +1,10 @@
 import { Box, ButtonBase, Typography } from '@mui/material';
 import { NavLink } from 'react-router-dom';
-import { Gamepad2, Store, Users, Globe } from 'lucide-react';
+import { Gamepad2, Store } from 'lucide-react';
 
 const ITEMS = [
   { path: '/', label: 'Vault', icon: Gamepad2 },
   { path: '/providers', label: 'Providers', icon: Store },
-  { path: '/friends', label: 'Friends', icon: Users },
-  { path: '/community', label: 'Community', icon: Globe },
 ];
 
 /** Full-width, safe-area aware mobile navigation matching Fitpal. */

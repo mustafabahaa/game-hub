@@ -3,9 +3,10 @@ import {
   Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Card, CardActionArea,
   CardContent, Pagination, Skeleton,
 } from '@mui/material';
-import { Search, Plus, Star, MessageSquare, Gamepad2 } from 'lucide-react';
+import { Search, Plus, Gamepad2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useProviders, useRatings, useReputation } from '@/hooks/useGamehub';
+import { useAppContext } from '@/hooks/useAppContext';
+import { useProviders } from '@/hooks/useGamehub';
 import { ProviderModal } from '@/components/ProviderModal';
 import { EmptyState } from '@/components/EmptyState';
 import type { Provider } from '@/domain/types';
@@ -14,7 +15,8 @@ const PAGE_SIZE = 8;
 
 export function ProvidersPage() {
   const navigate = useNavigate();
-  const { data: providers, isLoading } = useProviders();
+  const { user } = useAppContext();
+  const { data: providers, isLoading } = useProviders(user?.uid);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
@@ -34,7 +36,7 @@ export function ProvidersPage() {
       <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3.5, flexWrap: 'wrap', gap: 2 }}>
         <Box>
           <Typography variant="h1">Providers</Typography>
-          <Typography variant="body2" sx={{ mt: 0.75 }}>{providers?.length ?? 0} providers · rated by the community</Typography>
+          <Typography variant="body2" sx={{ mt: 0.75 }}>{providers?.length ?? 0} saved providers</Typography>
         </Box>
         <Button variant="contained" startIcon={<Plus size={16} />} onClick={() => { setEditProvider(undefined); setModalOpen(true); }}>
           Add Provider
@@ -57,7 +59,7 @@ export function ProvidersPage() {
           <EmptyState
             icon={<Gamepad2 size={21} />}
             title="No providers yet"
-            description="Add a provider you trust to keep contact details and community feedback together."
+            description="Keep the stores you use and their contact details together."
             action={<Button variant="contained" startIcon={<Plus size={16} />} onClick={() => { setEditProvider(undefined); setModalOpen(true); }}>Add provider</Button>}
             sx={{ py: 3 }}
           />
@@ -91,14 +93,6 @@ interface ProviderCardProps {
 }
 
 function ProviderCard({ provider, onView }: ProviderCardProps) {
-  const { data: ratings } = useRatings(provider.id);
-  const { data: reputation } = useReputation(provider.id);
-
-  const avgRating = useMemo(() => {
-    const r = ratings ?? [];
-    return r.length === 0 ? null : r.reduce((s, x) => s + x.rating, 0) / r.length;
-  }, [ratings]);
-
   return (
     <Card sx={{ overflow: 'hidden', height: '100%' }}>
       <CardActionArea onClick={onView} sx={{ display: 'flex', height: '100%', flexDirection: 'column', alignItems: 'stretch' }}>
@@ -108,10 +102,7 @@ function ProviderCard({ provider, onView }: ProviderCardProps) {
         <CardContent sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', flex: 1, gap: .75 }}>
           <Typography variant="h6" sx={{ fontWeight: 700 }} noWrap>{provider.name}</Typography>
           {provider.website ? <Typography variant="body2" color="text.secondary" noWrap>{provider.website.replace(/^https?:\/\//, '')}</Typography> : <Typography variant="body2" color="text.secondary">No website listed</Typography>}
-          <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: .5 }}>
-            <Stack direction="row" spacing={.5} alignItems="center"><Star size={16} /><Typography variant="body2">{avgRating === null ? 'Not rated' : avgRating.toFixed(1)}</Typography></Stack>
-            <Stack direction="row" spacing={.5} alignItems="center"><MessageSquare size={16} /><Typography variant="body2">{(reputation ?? []).length} {(reputation ?? []).length === 1 ? 'review' : 'reviews'}</Typography></Stack>
-          </Stack>
+          {provider.notes && <Typography variant="body2" color="text.secondary" sx={{ mt: .5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{provider.notes}</Typography>}
         </CardContent>
       </CardActionArea>
     </Card>
@@ -127,10 +118,7 @@ function ProviderCardSkeleton() {
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
         <Skeleton variant="text" animation="wave" width="65%" height={28} />
         <Skeleton variant="text" animation="wave" width="48%" height={20} />
-        <Stack direction="row" spacing={1.5} sx={{ mt: 0.5 }}>
-          <Skeleton variant="text" animation="wave" width={64} height={20} />
-          <Skeleton variant="text" animation="wave" width={84} height={20} />
-        </Stack>
+        <Skeleton variant="text" animation="wave" width="86%" height={20} />
       </CardContent>
     </Card>
   );
