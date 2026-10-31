@@ -1,64 +1,27 @@
-# Game Hub - Multi-Tenant SaaS Platform
+# GameHub
 
-Welcome to Game Hub, a secure, multi-tenant platform for managing your PlayStation, Xbox, and Steam game collections.
+GameHub is a React, TypeScript, and Vite app for managing game accounts, libraries, providers, and sharing. It uses Firebase Authentication, Cloud Firestore, Firebase Storage, and Firebase Hosting.
 
-## Features
+## Local development
 
-- **Multi-Tenant Architecture**: Complete data isolation using Supabase Row Level Security (RLS). Every user has a strictly private workspace.
-- **Game Vault**: Store, track, and manage your purchased games across platforms.
-- **Provider Integrations**: Add custom providers or social links associated with your account.
-- **Premium Design**: Built with Next.js App Router, Tailwind CSS, and WebGL animations for a stunning user experience.
+Requirements: Node.js 20 or newer and npm.
 
-## Getting Started
+1. Install dependencies with `npm install`.
+2. Copy `.env.example` to `.env.local` and fill in the Firebase web app configuration from the Firebase project.
+3. Start the app with `npm run dev`.
 
-### Prerequisites
+The client reads `VITE_FIREBASE_*` variables. At minimum, set the API key and project ID or the app will show its Firebase configuration screen.
 
-- Node.js (v18+)
-- A Supabase Project (Database, Auth, Storage)
+## Firebase
 
-### Setup
+The Firebase project alias is `gamehub-app-11072026` in `.firebaserc`. Hosting serves the Vite `dist` directory and rewrites client routes to `index.html`. Firestore indexes and Firestore and Storage rules are kept in the repository.
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/mustafabahaa/game-hub.git
-   cd game-hub
-   ```
+Build the client with `npm run build`. Deploy hosting with `npm run deploy:web`; deploy Functions with `npm run deploy:functions`; deploy Firestore rules and indexes with `npm run deploy:firestore`; deploy Storage rules with `npm run deploy:storage`. `npm run deploy` deploys all configured Firebase resources. Ensure the Firebase CLI is authenticated and the `VITE_FIREBASE_*` settings are available in the build environment.
 
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
+Firebase Functions use Node.js 22 and require an active Firebase billing account. The Codex connection encrypts per-user provider credentials with `GAMEHUB_AI_ENCRYPTION_KEY`; generate a unique 32-byte key and set it with `firebase functions:secrets:set GAMEHUB_AI_ENCRYPTION_KEY` before deploying Functions. Keep this key private and backed up: changing or losing it makes existing saved credentials unreadable. The isolated Codex runtime uses Vercel Sandbox; set a Vercel API token as the `VERCEL_API_TOKEN` Functions secret and configure `VERCEL_SANDBOX_TEAM_ID` and `VERCEL_SANDBOX_PROJECT_ID` as Functions parameters. `GAMEHUB_PUBLIC_URL` defaults to this project's Firebase Hosting origin and can be set in the Functions environment for a custom domain.
 
-3. **Environment Variables:**
-   Create a `.env.local` file in the root directory and add your Supabase credentials:
-   ```env
-   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-   ```
+## MCP and AI
 
-4. **Run the development server:**
-   ```bash
-   npm run dev
-   ```
+GameHub's MCP server supports OAuth 2.1 with PKCE and also offers manually managed 30-day bearer tokens. OAuth clients can discover authorization metadata from the Hosting origin and request `gamehub:read`, optional `gamehub:write`, and `offline_access`. The consent page is `/mcp/authorize`. Manual tokens default to read-only; write access is explicit and destructive actions require confirmation. Raw manual tokens are shown once and can be revoked from the GameHub MCP dialog.
 
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-## Database & Storage Setup
-
-You must configure your Supabase instance to run the application correctly:
-
-1.  **Tables**:
-    -   `accounts`: Needs columns `id`, `user_id`, `account_name`, `email`, `password`, `otp_secret`, `provider_id`, `account_type`, `platform`, `is_ps_plus`, `created_at`, `updated_at`.
-    -   `games`: Needs columns `id`, `account_id`, `title`, `image_url`, `created_at`.
-    -   `providers`: Needs columns `id`, `user_id`, `name`, `email`, `password`, `notes`, `photo_url`, `created_at`.
-2.  **Row Level Security (RLS)**: Enable RLS on all tables, creating policies where `user_id = auth.uid()`.
-3.  **Storage**: Create a public bucket named `game-images` and apply RLS policies for authenticated users.
-
-## Deployment
-
-The application is fully optimized for Vercel deployment. It has 0 linting errors and passing builds.
-Simply connect your GitHub repository to Vercel and add the corresponding `.env` variables in your project settings.
-
-## License
-
-This project is licensed under the MIT License.
+The Hosting rewrites for `/mcp` and the OAuth routes are configured in `firebase.json`. After Firebase billing and the required Functions secrets are in place, deploy Functions and Hosting. Then set `VITE_GAMEHUB_FUNCTIONS_ENABLED=true` in the web build environment and rebuild/redeploy Hosting to enable the assistant and MCP controls. The connected Codex assistant runs in an isolated Vercel Sandbox. The in-app assistant and remote MCP server use the same server-side tool registry for account and game management, providers and reviews, profiles, friends and requests, account sharing, and public community profiles and games. Password and OTP values are never available to AI tools. The in-app assistant asks for confirmation before every mutation. MCP read credentials receive read tools only, while write credentials can use the registry's mutation tools. Destructive actions and credential-free account sharing require an explicit `confirm: true`; GameHub MCP sharing never grants password or OTP access.

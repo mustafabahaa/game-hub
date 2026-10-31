@@ -1,511 +1,170 @@
-"use client";
-
-import { useState, useRef, useEffect } from "react";
-import Image from "next/image";
-import { Account, GameFormData } from "@/types/account";
-import { supabase } from "@/lib/supabase";
-import { getStoragePathFromPublicUrl } from "@/lib/storage";
-import { optimizeImageForUpload } from "@/lib/imageUpload";
-import { useAccountsContext } from "@/context/AccountsContext";
-import Aurora from "@/components/Aurora";
-import ConfirmDialog from "@/components/ConfirmDialog";
-import { 
-  X, 
-  Plus, 
-  Gamepad2, 
-  Monitor, 
-  Shield, 
-  Trash2, 
-  Image as ImageIcon, 
-  Loader2,
-  ChevronLeft,
-  CircleCheckBig,
-  CircleAlert,
-  Share2
-} from "lucide-react";
+import { useEffect, useRef, useState } from 'react';
+import {
+  Avatar, Box, Button, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent,
+  FormControlLabel, IconButton, MenuItem, Stack, Switch, TextField, Typography,
+} from '@mui/material';
+import { CalendarClock, Check, Copy, Infinity as InfinityIcon, KeyRound, Mail, Plus, ShieldCheck, Share2, Trash2, Upload, X } from 'lucide-react';
+import { useAppContext } from '@/hooks/useAppContext';
+import { useCreateGame, useDeleteGame, useFriends, useShareAccount } from '@/hooks/useGamehub';
+import { getLifecycleLabel, isAccountExpired } from '@/domain/lifecycle';
+import type { Account, Game } from '@/domain/types';
 
 interface AccountDetailModalProps {
-  isOpen: boolean;
+  open: boolean;
+  account?: Account;
   onClose: () => void;
-  account: Account | null;
+  onDelete: () => void;
 }
 
-export default function AccountDetailModal({ isOpen, onClose, account }: AccountDetailModalProps) {
-  const { accounts, refetch: refetchAccounts } = useAccountsContext();
-  const currentAccount = account ? accounts.find((a) => a.id === account.id) || account : null;
-  const currentAccountId = currentAccount?.id;
-  const [isAddingGame, setIsAddingGame] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const [gameForm, setGameForm] = useState<GameFormData>({ title: "", imageFile: null, imageUrl: "" });
-  const [preview, setPreview] = useState<string | null>(null);
-  const [toast, setToast] = useState<{ message: string; type: "error" } | null>(null);
-  const [gameToDeleteId, setGameToDeleteId] = useState<string | null>(null);
-  const [deletingGame, setDeletingGame] = useState(false);
-  const [friends, setFriends] = useState<Array<{ id: string; username: string }>>([]);
-  const [selectedFriendId, setSelectedFriendId] = useState("");
-  const [canSharePassword, setCanSharePassword] = useState(true);
-  const [canShareOtp, setCanShareOtp] = useState(true);
-  const [sharingAccount, setSharingAccount] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+export function AccountDetailModal({ open, account, onClose, onDelete }: AccountDetailModalProps) {
+  const { user } = useAppContext();
+  const uid = user?.uid ?? '';
+  const { data: friends = [] } = useFriends(uid || undefined);
+  const createGame = useCreateGame(uid, account?.id ?? '');
+  const deleteGame = useDeleteGame(uid, account?.id ?? '');
+  const shareAccount = useShareAccount(uid, user?.displayName ?? user?.email ?? 'GameHub user');
+  const [title, setTitle] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [sharing, setSharing] = useState(false);
+  const [recipientId, setRecipientId] = useState('');
+  const [canViewPassword, setCanViewPassword] = useState(false);
+  const [canViewOtp, setCanViewOtp] = useState(false);
+  const [shownSecrets, setShownSecrets] = useState<Record<string, boolean>>({});
+  const [copied, setCopied] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (isOpen) {
-      setIsAddingGame(false);
-      setSuccessMessage(null);
-      setGameForm({ title: "", imageFile: null, imageUrl: "" });
-      setPreview(null);
-      setToast(null);
-      setGameToDeleteId(null);
-      setDeletingGame(false);
-      setSelectedFriendId("");
-      setCanSharePassword(true);
-      setCanShareOtp(true);
-    }
-  }, [isOpen, currentAccount?.id]);
+    if (!open) return;
+    setTitle(''); setImageFile(null); setSharing(false); setRecipientId('');
+    setCanViewPassword(false); setCanViewOtp(false); setShownSecrets({}); setCopied(null);
+  }, [open, account?.id]);
 
-  useEffect(() => {
-    if (!isOpen || !currentAccountId) return;
-    const loadFriends = async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user.id;
-      if (!userId) return;
-      const { data: rels } = await supabase.from("friendships").select("friend_id").eq("user_id", userId);
-      const friendIds = (rels || []).map((r) => r.friend_id as string);
-      if (friendIds.length === 0) {
-        setFriends([]);
-        return;
-      }
-      const { data: profiles } = await supabase
-        .from("user_profiles")
-        .select("user_id,display_name,username")
-        .in("user_id", friendIds);
-      setFriends(
-        (profiles || []).map((p) => ({
-          id: p.user_id as string,
-          username: ((p.display_name as string) || (p.username as string) || "Player"),
-        }))
-      );
-    };
-    void loadFriends();
-  }, [isOpen, currentAccountId]);
-
-  if (!isOpen || !currentAccount) return null;
-
-  const showToast = (message: string, type: "error") => {
-    setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+  if (!account) return null;
+  const games = account.games ?? [];
+  const expired = isAccountExpired(account);
+  const share = async () => {
+    if (!recipientId) return;
+    await shareAccount.mutateAsync({ account, recipientId, canViewPassword, canViewOtp });
+    setSharing(false); setRecipientId(''); setCanViewPassword(false); setCanViewOtp(false);
   };
-
-  const PlatformIcon = currentAccount.platform === "PlayStation" ? Gamepad2 : currentAccount.platform === "Xbox" ? Shield : Monitor;
-
-  const handleFileChange = (file: File | null) => {
-    if (!file) return;
-    setGameForm((f) => ({ ...f, imageFile: file }));
-    const reader = new FileReader();
-    reader.onloadend = () => setPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const handleAddGame = async (e: React.SyntheticEvent) => {
-    e.preventDefault();
-if (!gameForm.title) {
-        showToast("Game title is required", "error");
-        return;
-      }
-
-    setSubmitting(true);
-    try {
-      let imageUrl: string | null = null;
-      if (gameForm.imageFile) {
-        const optimizedImage = await optimizeImageForUpload(gameForm.imageFile);
-        const fileExt = optimizedImage.name.split(".").pop();
-        const filePath = `games/${Date.now()}.${fileExt}`;
-        const { error: uploadError } = await supabase.storage.from("game-images").upload(filePath, optimizedImage);
-        if (uploadError) throw uploadError;
-
-        imageUrl = supabase.storage.from("game-images").getPublicUrl(filePath).data.publicUrl;
-      }
-
-      const { error: dbError } = await supabase.from("games").insert({
-        account_id: currentAccount.id,
-        title: gameForm.title,
-        image_url: imageUrl
-      });
-
-      if (dbError) throw dbError;
-
-      // Update local context
-      await refetchAccounts();
-
-      setSuccessMessage("Game Added to Vault");
-      setTimeout(() => {
-        setSuccessMessage(null);
-        setIsAddingGame(false);
-        setGameForm({ title: "", imageFile: null, imageUrl: "" });
-        setPreview(null);
-      }, 1500);
-    } catch (err) {
-      console.error("Error adding game:", err);
-      showToast("Access Denied. System Error.", "error");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const handleDeleteGame = (gameId: string) => {
-    setGameToDeleteId(gameId);
-  };
-
-  const confirmDeleteGame = async () => {
-    if (!gameToDeleteId) return;
-    setDeletingGame(true);
-    try {
-      const gameToDelete = currentAccount.games?.find((g) => g.id === gameToDeleteId);
-      const imagePath = getStoragePathFromPublicUrl(gameToDelete?.imageUrl, "game-images");
-      if (imagePath) {
-        const { error: storageError } = await supabase.storage.from("game-images").remove([imagePath]);
-        if (storageError) {
-          console.warn("Failed to remove game image from storage:", storageError.message);
-        }
-      }
-
-      const { error } = await supabase.from("games").delete().eq("id", gameToDeleteId);
-      if (error) throw error;
-      await refetchAccounts();
-      setIsAddingGame(false);
-      setGameToDeleteId(null);
-    } catch (err) {
-      console.error("Error deleting game:", err);
-      showToast("Delete Failed", "error");
-    } finally {
-      setDeletingGame(false);
-    }
-  };
-
-  const handleShareAccount = async () => {
-    if (!selectedFriendId) return showToast("Select a friend first", "error");
-    setSharingAccount(true);
-    try {
-      const { error } = await supabase.from("account_shares").upsert(
-        {
-          account_id: currentAccount.id,
-          recipient_id: selectedFriendId,
-          can_view_password: canSharePassword,
-          can_view_otp: canShareOtp,
-        },
-        { onConflict: "account_id,recipient_id" }
-      );
-      if (error) throw error;
-      showToast("Account shared successfully", "error");
-      setSelectedFriendId("");
-    } catch (err) {
-      console.error(err);
-      showToast("Failed to share account", "error");
-    } finally {
-      setSharingAccount(false);
-    }
+  const addGame = async () => {
+    if (!title.trim()) return;
+    await createGame.mutateAsync({ title: title.trim(), imageFile });
+    setTitle(''); setImageFile(null);
+    if (fileInput.current) fileInput.current.value = '';
   };
 
   return (
-    <div className="
-      fixed inset-0 z-100 flex items-center justify-center p-4
-      sm:p-6
-      lg:p-8
-    ">
-      <div 
-        className="
-          animate-fadeIn absolute inset-0 bg-black/80 backdrop-blur-3xl
-        " 
-        onClick={onClose} 
-      />
-      
-      <div className="
-        animate-scaleIn relative flex max-h-[90vh] w-full max-w-5xl flex-col
-        overflow-hidden rounded-[3rem] border border-white/10 bg-[#0a0a0f]
-        shadow-[0_50px_100px_rgba(0,0,0,0.8)]
-      ">
-        {/* Toast Notification */}
-        {toast && (
-          <div className={`
-            fixed bottom-6 left-1/2 -translate-x-1/2 z-110 flex animate-fadeInUp items-center gap-3
-            rounded-2xl border border-white/20 bg-linear-to-r from-red-600 to-red-800 px-6 py-4 text-[10px] font-black tracking-[0.2em]
-            uppercase shadow-[0_20px_50px_rgba(0,0,0,0.5)] text-white
-          `}>
-            <CircleAlert size={16} className="drop-shadow-md" />
-            {toast.message}
-          </div>
-        )}
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth scroll="paper" aria-labelledby="account-detail-title">
+      <Box sx={{ display: 'flex', flexDirection: 'column', maxHeight: 'min(88dvh, 820px)' }}>
+        <Box sx={{ position: 'relative', minHeight: 148, display: 'flex', alignItems: 'flex-end', p: { xs: 2, sm: 2.5 }, overflow: 'hidden', bgcolor: 'action.hover' }}>
+          {games[0]?.imageUrl && <Box component="img" src={games[0].imageUrl} alt="" sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: 'center 38%' }} />}
+          <Box sx={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(0,0,0,.8), rgba(0,0,0,.18)), linear-gradient(0deg, rgba(0,0,0,.52), transparent)' }} />
+          <IconButton aria-label="Close account details" onClick={onClose} sx={{ position: 'absolute', top: 12, right: 12, color: 'common.white', bgcolor: 'rgba(0,0,0,.38)', '&:hover': { bgcolor: 'rgba(0,0,0,.58)' } }}><X size={18} /></IconButton>
+          <Box sx={{ position: 'relative', color: 'common.white', pr: 5, minWidth: 0 }}>
+            <Stack direction="row" spacing={.75} useFlexGap flexWrap="wrap" sx={{ mb: .8 }}>
+              <HeroChip label={account.platform} />
+              {account.accountType && <HeroChip label={account.accountType} />}
+              <HeroChip label={getLifecycleLabel(account)} expired={expired} icon={expired ? <CalendarClock size={12} /> : account.lifecycleType === 'lifetime' ? <InfinityIcon size={12} /> : <CalendarClock size={12} />} />
+            </Stack>
+            <Typography id="account-detail-title" variant="h2" sx={{ color: 'common.white', fontWeight: 800, fontSize: { xs: 23, sm: 28 }, lineHeight: 1.15 }} noWrap>{account.accountName}</Typography>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,.78)', mt: .4 }}>{games.length} {games.length === 1 ? 'game' : 'games'} · account details</Typography>
+          </Box>
+        </Box>
 
-        <div className="pointer-events-none absolute inset-0 z-0 opacity-10">
-          <Aurora colorStops={["#00d2ff", "#0044ff", "#1a0b2e"]} blend={0.6} amplitude={0.8} />
-        </div>
+        <DialogContent sx={{ p: { xs: 2, sm: 2.5 }, overflowY: 'auto' }}>
+          <Stack spacing={{ xs: 2.5, sm: 3 }}>
+            <Box component="section" aria-labelledby="credentials-heading">
+              <SectionHeading id="credentials-heading" title="Credentials" detail="Private to you unless you choose to share them." />
+              <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, minmax(0, 1fr))' }, gap: 1 }}>
+                <Credential icon={<Mail size={16} />} label="Email" value={account.email} copied={copied === 'email'} onCopy={() => copyValue('email', account.email, setCopied)} />
+                <Credential icon={<KeyRound size={16} />} label="Password" value={account.password ?? ''} secret shown={shownSecrets.password} onReveal={() => setShownSecrets((prev) => ({ ...prev, password: !prev.password }))} copied={copied === 'password'} onCopy={() => copyValue('password', account.password ?? '', setCopied)} />
+                <Credential icon={<ShieldCheck size={16} />} label="OTP secret" value={account.otpSecret ?? ''} secret shown={shownSecrets.otp} onReveal={() => setShownSecrets((prev) => ({ ...prev, otp: !prev.otp }))} copied={copied === 'otp'} onCopy={() => copyValue('otp', account.otpSecret ?? '', setCopied)} />
+              </Box>
+            </Box>
 
-        <header className="
-          relative z-10 flex items-center justify-between border-b
-          border-white/10 bg-white/5 px-8 py-6 backdrop-blur-xl
-        ">
-          <div className="flex items-center gap-4">
-            <div className="
-              flex size-12 items-center justify-center rounded-2xl border
-              border-white/10 bg-linear-to-br from-ps-accent-start
-              to-ps-accent-blue-light shadow-lg
-            ">
-              <PlatformIcon size={24} className="text-white" />
-            </div>
-            <div>
-              <h2 className="
-                text-2xl font-black tracking-tight text-white uppercase
-              ">{currentAccount.accountName}</h2>
-              <p className="
-                text-[10px] font-bold tracking-[0.3em] text-white/40 uppercase
-              ">Games Repository</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="
-            flex size-10 items-center justify-center rounded-full bg-white/5
-            text-white/40 transition-all
-            hover:bg-white/10 hover:text-white
-          ">
-            <X size={20} />
-          </button>
-        </header>
+            <Box component="section" aria-labelledby="games-heading">
+              <SectionHeading id="games-heading" title={`Games · ${games.length}`} detail="Games linked to this account." />
+              {games.length > 0 ? <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))' }, gap: 1, mb: 1.25 }}>
+                {games.map((game) => <GameRow key={game.id} game={game} onDelete={() => deleteGame.mutate(game)} deleting={deleteGame.isPending} />)}
+              </Box> : <Box sx={{ mb: 1.25, p: 1.5, border: '1px dashed', borderColor: 'divider', borderRadius: 2 }}><Typography variant="body2" color="text.secondary">No games linked yet. Add a game below.</Typography></Box>}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'center' }}>
+                <Button variant="outlined" onClick={() => fileInput.current?.click()} startIcon={<Upload size={15} />} sx={{ flexShrink: 0, minHeight: 42, maxWidth: { sm: 190 }, overflow: 'hidden' }}>
+                  <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{imageFile?.name ?? 'Add cover image'}</Box>
+                </Button>
+                <input ref={fileInput} type="file" accept="image/*" hidden onChange={(event) => setImageFile(event.target.files?.[0] ?? null)} />
+                <TextField size="small" fullWidth value={title} onChange={(event) => setTitle(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void addGame(); }} placeholder="Game title" inputProps={{ 'aria-label': 'Game title' }} />
+                <Button variant="contained" onClick={() => void addGame()} disabled={!title.trim() || createGame.isPending} startIcon={createGame.isPending ? <CircularProgress size={15} color="inherit" /> : <Plus size={16} />} sx={{ minHeight: 42, flexShrink: 0 }}>Add game</Button>
+              </Stack>
+            </Box>
 
-        <main className="
-          custom-scrollbar relative z-10 flex-1 overflow-y-auto p-8
-        ">
-          {isAddingGame ? (
-            <div className="animate-fadeIn mx-auto max-w-xl">
-              <button 
-                onClick={() => setIsAddingGame(false)}
-                className="
-                  mb-8 flex items-center gap-2 text-[10px] font-black
-                  tracking-widest text-white/40 uppercase transition-colors
-                  hover:text-white
-                "
-              >
-                <ChevronLeft size={16} /> Back to Games
-              </button>
-              
-              <form onSubmit={handleAddGame} className="space-y-8">
-                <div 
-                  onClick={() => fileRef.current?.click()}
-                  className="
-                    group relative aspect-video cursor-pointer overflow-hidden
-                    rounded-[2rem] border-2 border-dashed border-white/10
-                    bg-white/5 shadow-2xl transition-all
-                    hover:border-ps-accent-end/50
-                  "
-                >
-                  {preview ? (
-                    <Image src={preview} alt="Preview" fill className="
-                      object-cover transition-transform duration-700
-                      group-hover:scale-105
-                    " unoptimized />
-                  ) : (
-                    <div className="
-                      absolute inset-0 flex flex-col items-center justify-center
-                      gap-4
-                    ">
-                      <div className="
-                        flex size-16 items-center justify-center rounded-full
-                        bg-white/5 text-white/10 transition-colors
-                        group-hover:text-ps-accent-end/50
-                      ">
-                        <ImageIcon size={32} />
-                      </div>
-                      <span className="
-                        text-center text-[10px] font-black tracking-widest
-                        text-white/20 uppercase
-                      ">Upload Game Cover</span>                      <span className="text-[10px] text-white/30 uppercase tracking-[0.2em]">Optional</span>                    </div>
-                  )}
-                  <input ref={fileRef} type="file" accept="image/*" className="
-                    hidden
-                  " onChange={(e) => handleFileChange(e.target.files?.[0] || null)} />
-                </div>
+            <Collapse in={sharing}>
+              <Box component="section" sx={{ p: 1.75, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+                <SectionHeading title="Share account" detail="Choose a friend and exactly what they can view." />
+                <Stack spacing={1.25}>
+                  <TextField select size="small" label="Friend" value={recipientId} onChange={(event) => setRecipientId(event.target.value)}>
+                    {friends.length === 0 ? <MenuItem value="" disabled>No friends to share with yet</MenuItem> : <MenuItem value="">Choose a friend</MenuItem>}
+                    {friends.map((friend) => <MenuItem key={friend.friendUid} value={friend.friendUid}>{friend.friendProfile?.displayName ?? friend.friendProfile?.username ?? 'Friend'}</MenuItem>)}
+                  </TextField>
+                  <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 0, sm: 2 }}>
+                    <FormControlLabel control={<Switch size="small" checked={canViewPassword} onChange={(event) => setCanViewPassword(event.target.checked)} />} label="Allow password access" />
+                    <FormControlLabel control={<Switch size="small" checked={canViewOtp} onChange={(event) => setCanViewOtp(event.target.checked)} />} label="Allow OTP access" />
+                  </Stack>
+                </Stack>
+              </Box>
+            </Collapse>
+          </Stack>
+        </DialogContent>
 
-                <div className="space-y-4">
-                  <label className="
-                    ml-1 block text-xs font-black tracking-widest text-white/40
-                    uppercase
-                  ">Game Title</label>
-                  <input
-                    required
-                    value={gameForm.title}
-                    onChange={(e) => setGameForm(f => ({ ...f, title: e.target.value }))}
-                    placeholder="e.g. God of War Ragnarök"
-                    className="
-                      w-full rounded-2xl border border-white/10 bg-white/5 px-6
-                      py-5 text-lg font-bold text-white transition-all
-                      outline-none
-                      focus:border-ps-accent-end/50 focus:bg-white/10
-                    "
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting || successMessage !== null}
-                  className={`
-                    flex w-full items-center justify-center gap-3 rounded-[2rem]
-                    py-5 text-xs font-black tracking-[0.4em] text-white uppercase
-                    shadow-[0_20px_50px_rgba(0,102,255,0.4)] transition-all
-                    hover:scale-[1.01]
-                    active:scale-[0.99]
-                    disabled:opacity-50
-                    ${successMessage ? `
-                      bg-linear-to-r from-ps-accent-end to-ps-accent-end
-                    ` : `
-                      bg-linear-to-r from-ps-accent-start to-ps-accent-end
-                    `}
-                  `}
-                >
-                  {submitting ? (
-                    <Loader2 size={20} className="animate-spin" />
-                  ) : successMessage ? (
-                    <CircleCheckBig size={20} />
-                  ) : (
-                    <Plus size={20} />
-                  )}
-                  {successMessage || "Add Game to Account"}
-                </button>
-              </form>
-            </div>
-          ) : (
-            <div className="space-y-8">
-              <div className="flex items-center justify-between">
-                <h3 className="
-                  text-xs font-black tracking-[0.4em] text-white/40 uppercase
-                ">Collection ({currentAccount.games?.length || 0})</h3>
-                <button
-                  onClick={() => setIsAddingGame(true)}
-                  className="
-                    flex items-center gap-2 rounded-full border
-                    border-ps-accent-end/20 bg-ps-accent-end/10 px-6 py-3
-                    text-[10px] font-black tracking-widest text-ps-accent-end
-                    uppercase shadow-lg transition-all
-                    hover:bg-ps-accent-end hover:text-white
-                  "
-                >
-                  <Plus size={16} /> Add Game
-                </button>
-              </div>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] text-white/50">
-                  <Share2 size={14} />
-                  Share Account With Friend
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-                  <select
-                    value={selectedFriendId}
-                    onChange={(e) => setSelectedFriendId(e.target.value)}
-                    className="md:col-span-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2 text-sm text-white"
-                  >
-                    <option value="">Select friend</option>
-                    {friends.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.username}
-                      </option>
-                    ))}
-                  </select>
-                  <label className="flex items-center gap-2 text-xs text-white/70">
-                    <input type="checkbox" checked={canSharePassword} onChange={(e) => setCanSharePassword(e.target.checked)} />
-                    Password
-                  </label>
-                  <label className="flex items-center gap-2 text-xs text-white/70">
-                    <input type="checkbox" checked={canShareOtp} onChange={(e) => setCanShareOtp(e.target.checked)} />
-                    OTP
-                  </label>
-                </div>
-                <div className="flex justify-end">
-                  <button
-                    onClick={handleShareAccount}
-                    disabled={sharingAccount || friends.length === 0}
-                    className="rounded-xl border border-ps-accent-blue-light/40 bg-linear-to-r from-ps-accent-start to-ps-accent-blue-light px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-white disabled:opacity-50"
-                  >
-                    {sharingAccount ? "Sharing..." : "Share"}
-                  </button>
-                </div>
-                {friends.length === 0 ? (
-                  <p className="text-[10px] uppercase tracking-[0.16em] text-white/40">No friends yet. Add friends first.</p>
-                ) : null}
-              </div>
-
-              {currentAccount.games && currentAccount.games.length > 0 ? (
-                <div className="
-                  grid grid-cols-2 gap-6
-                  sm:grid-cols-3
-                  md:grid-cols-4
-                ">
-                  {currentAccount.games.map((game) => (
-                    <div key={game.id} className="
-                      group relative aspect-3/4 overflow-hidden rounded-2xl
-                      border border-white/5 bg-white/5 shadow-2xl
-                    ">
-                      <Image src={game.imageUrl} alt={game.title} fill className="
-                        object-cover transition-transform duration-700
-                        group-hover:scale-110
-                      " unoptimized />
-                      <div className="
-                        absolute inset-0 bg-linear-to-t from-black via-black/20
-                        to-transparent opacity-80
-                      " />
-                      <div className="absolute inset-x-0 bottom-0 p-4">
-                        <h4 className="
-                          mb-2 line-clamp-2 text-xs font-black tracking-tight
-                          text-white uppercase
-                        ">{game.title}</h4>
-                        <button 
-                          onClick={() => handleDeleteGame(game.id)}
-                          className="
-                            rounded-lg bg-red-500/10 p-2 text-red-500 opacity-0
-                            transition-opacity
-                            group-hover:opacity-100
-                            hover:bg-red-500 hover:text-white
-                          "
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="
-                  flex flex-col items-center justify-center gap-6 rounded-[3rem]
-                  border-2 border-dashed border-white/5 bg-white/2 py-20
-                ">
-                  <div className="
-                    flex size-20 items-center justify-center rounded-full
-                    bg-white/5 text-white/10
-                  ">
-                    <Gamepad2 size={40} />
-                  </div>
-                  <div className="text-center">
-                    <p className="
-                      mb-1 text-lg font-black tracking-widest text-white/40
-                      uppercase
-                    ">No Games Found</p>
-                    <p className="
-                      text-[10px] tracking-[0.2em] text-white/20 uppercase
-                    ">Start by adding the first game to this vault</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-        </main>
-      </div>
-      <ConfirmDialog
-        isOpen={Boolean(gameToDeleteId)}
-        title="Delete Game?"
-        message="This game will be permanently removed from this account."
-        confirmLabel="Delete"
-        loading={deletingGame}
-        onCancel={() => !deletingGame && setGameToDeleteId(null)}
-        onConfirm={confirmDeleteGame}
-      />
-    </div>
+        <DialogActions sx={{ px: { xs: 2, sm: 2.5 }, py: 1.5, borderTop: '1px solid', borderColor: 'divider', justifyContent: 'space-between', flexWrap: 'wrap', gap: 1 }}>
+          <Button color="error" size="small" startIcon={<Trash2 size={16} />} onClick={onDelete}>Delete</Button>
+          <Stack direction="row" spacing={1}>
+            {sharing ? <><Button size="small" onClick={() => setSharing(false)}>Cancel</Button><Button size="small" variant="contained" disabled={!recipientId || shareAccount.isPending} onClick={() => void share()}>{shareAccount.isPending ? 'Sharing…' : 'Share account'}</Button></> : <Button size="small" variant="outlined" startIcon={<Share2 size={16} />} onClick={() => setSharing(true)}>Share</Button>}
+            <Button size="small" variant="contained" onClick={onClose}>Done</Button>
+          </Stack>
+        </DialogActions>
+      </Box>
+    </Dialog>
   );
+}
+
+function HeroChip({ label, icon, expired }: { label: string; icon?: React.ReactElement; expired?: boolean }) {
+  return <Chip size="small" icon={icon} label={label} sx={{ height: 26, color: 'common.white', bgcolor: expired ? 'rgba(150,24,24,.78)' : 'rgba(0,0,0,.48)', '& .MuiChip-icon': { color: 'inherit', ml: .8 }, '& .MuiChip-label': { px: 1, fontSize: 11, fontWeight: 700 } }} />;
+}
+
+function SectionHeading({ id, title, detail }: { id?: string; title: string; detail: string }) {
+  return <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ sm: 'baseline' }} spacing={{ xs: .2, sm: 1 }} sx={{ mb: 1.25 }}>
+    <Typography id={id} variant="subtitle2" sx={{ fontWeight: 800 }}>{title}</Typography>
+    <Typography variant="caption" color="text.secondary">{detail}</Typography>
+  </Stack>;
+}
+
+function Credential({ icon, label, value, secret, shown, copied, onReveal, onCopy }: { icon: React.ReactNode; label: string; value: string; secret?: boolean; shown?: boolean; copied: boolean; onReveal?: () => void; onCopy: () => void }) {
+  return <Box sx={{ px: 1.25, py: 1, border: '1px solid', borderColor: 'divider', borderRadius: 2, minWidth: 0 }}>
+    <Stack direction="row" alignItems="center" spacing={.75} sx={{ minHeight: 28 }}>
+      <Box sx={{ display: 'flex', color: 'text.secondary' }}>{icon}</Box>
+      <Typography variant="caption" color="text.secondary" sx={{ flex: 1, fontWeight: 600 }}>{label}</Typography>
+      {secret && <Button size="small" onClick={onReveal} sx={{ minWidth: 0, px: .5, py: 0, fontSize: 11 }}>{shown ? 'Hide' : 'Reveal'}</Button>}
+      <IconButton size="small" aria-label={`Copy ${label}`} disabled={!value} onClick={onCopy} sx={{ p: .5 }}>{copied ? <Check size={15} /> : <Copy size={15} />}</IconButton>
+    </Stack>
+    <Typography variant="body2" title={secret && !shown ? undefined : value} sx={{ mt: .4, fontFamily: 'monospace', fontWeight: 600, fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+      {value ? secret && !shown ? '••••••••' : value : 'Not set'}
+    </Typography>
+  </Box>;
+}
+
+function GameRow({ game, onDelete, deleting }: { game: Game; onDelete: () => void; deleting: boolean }) {
+  return <Stack direction="row" alignItems="center" spacing={1.25} sx={{ p: .9, minWidth: 0, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+    {game.imageUrl ? <Box component="img" src={game.imageUrl} alt="" sx={{ width: 38, height: 50, objectFit: 'cover', borderRadius: 1, flexShrink: 0 }} /> : <Avatar variant="rounded" sx={{ width: 38, height: 50, bgcolor: 'action.selected', flexShrink: 0 }}><Plus size={16} /></Avatar>}
+    <Typography variant="body2" sx={{ flex: 1, minWidth: 0, fontWeight: 650 }} noWrap title={game.title}>{game.title}</Typography>
+    <IconButton aria-label={`Remove ${game.title}`} size="small" disabled={deleting} onClick={onDelete}><Trash2 size={16} /></IconButton>
+  </Stack>;
+}
+
+function copyValue(key: string, value: string, setCopied: (key: string | null) => void) {
+  if (!value || !navigator.clipboard) return;
+  void navigator.clipboard.writeText(value).then(() => {
+    setCopied(key);
+    window.setTimeout(() => setCopied(null), 1400);
+  }).catch(() => setCopied(null));
 }

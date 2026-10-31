@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// GameHub Storage rules.
+// Path conventions:
+// - Game covers:      users/{uid}/gameImages/{accountId}/{imageId}.jpg
+// - Provider photos:  users/{uid}/providerPhotos/{providerId}/{imageId}.jpg
+//
+// Images are public-read (they're shown across the app via download URLs),
+// owner-write only.
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    function isSignedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isSignedIn() && userId == uid();
+    }
+
+    // Deny everything else by default.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,83 @@
+rules_version = '2';
+
+// GameHub security rules — hybrid model:
+// - Private per-user data: users/{uid}/... (owner-only)
+// - Public/social data: providers, profiles, publicGames (public read, owner write)
+// - Friends: friendRequests (sender+receiver), friendships (owner)
+// - Shares: sharedAccounts (recipient+owner read, owner write)
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+
+    // ---- Private per-user data ----
+    // Accounts + nested games: owner-only.
+    match /users/{userId}/{document=**} {
+      allow read, write: if isSignedIn() && uid() == userId;
+    }
+
+    // ---- Providers (public read) ----
+    match /providers/{providerId} {
+      allow read: if true;
+      // Create by anyone signed-in (they become the owner via userId field).
+      // Update/delete only by the owner.
+      allow create: if isSignedIn();
+      allow update, delete: if isSignedIn() && resource.data.userId == uid();
+
+      // Ratings subcollection: public read, self write (one per user).
+      match /ratings/{raterUid} {
+        allow read: if true;
+        allow create, update: if isSignedIn() && raterUid == uid();
+        allow delete: if isSignedIn() && raterUid == uid();
+      }
+
+      // Reputation posts: public read, self write.
+      match /reputation/{postId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.data.userId == uid();
+        allow update, delete: if isSignedIn() && resource.data.userId == uid();
+      }
+    }
+
+    // ---- Profiles (public read, owner write) ----
+    match /profiles/{userId} {
+      allow read: if true;
+      allow create, update: if isSignedIn() && userId == uid();
+      allow delete: if isSignedIn() && userId == uid();
+    }
+
+    // ---- Public games feed (public read, owner write) ----
+    match /publicGames/{gameId} {
+      allow read: if true;
+      allow write: if isSignedIn() && request.data.ownerUid == uid();
+      allow update, delete: if isSignedIn() && resource.data.ownerUid == uid();
+    }
+
+    // ---- Friend requests ----
+    // Sender can create (only for themselves as sender).
+    // Both sender and receiver can read their own requests.
+    // Both can update status (accept/reject/cancel).
+    match /friendRequests/{requestId} {
+      allow read: if isSignedIn() && (resource.data.senderId == uid() || resource.data.receiverId == uid());
+      allow create: if isSignedIn() && request.data.senderId == uid();
+      allow update: if isSignedIn() && (resource.data.senderId == uid() || resource.data.receiverId == uid());
+      allow delete: if isSignedIn() && (resource.data.senderId == uid() || resource.data.receiverId == uid());
+    }
+
+    // ---- Friendships (owner-only, bi-directional pair) ----
+    match /friendships/{userId}/friends/{friendUid} {
+      allow read: if isSignedIn() && userId == uid();
+      // Writes are managed via the friend-request accept flow (server trust).
+      // The client writes both directions on accept; allow both parties.
+      allow write: if isSignedIn() && (userId == uid() || friendUid == uid());
+    }
+
+    // ---- Shared accounts (recipient + owner read, owner write) ----
+    match /sharedAccounts/{shareId} {
+      allow read: if isSignedIn() && (resource.data.ownerId == uid() || resource.data.recipientId == uid());
+      allow create, update, delete: if isSignedIn() && request.data.ownerId == uid();
+    }
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "hosting": {
+    "public": "dist",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/mcp", "function": { "functionId": "gamehubMcp", "region": "us-central1" } },
+      { "source": "/.well-known/**", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
+      { "source": "/authorize", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
+      { "source": "/token", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
+      { "source": "/register", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
+      { "source": "/revoke", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
+      { "source": "/mcp-auth/**", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
+      { "source": "**", "destination": "/index.html" }
+    ],
+    "headers": [
+      {
+        "source": "/index.html",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+        ]
+      },
+      {
+        "source": "/",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+        ]
+      },
+      {
+        "source": "/providers",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+        ]
+      },
+      {
+        "source": "/providers/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+        ]
+      },
+      {
+        "source": "/friends",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+        ]
+      },
+      {
+        "source": "/community",
+        "headers": [
+          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "storage": {
+    "rules": "storage.rules"
+  },
+  "functions": {
+    "source": "packages/functions",
+    "runtime": "nodejs22",
+    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+  }
+}
