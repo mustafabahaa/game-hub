@@ -21,7 +21,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
-    "@monochrome-ui/design-system": "https://github.com/mustafabahaa/monochrome-ui/archive/refs/tags/v0.1.6.tar.gz",
+    "@monochrome-ai/core": "https://codeload.github.com/mustafabahaa/monochrome-ai/tar.gz/3ecabd9",
+    "@monochrome-ui/design-system": "https://codeload.github.com/mustafabahaa/monochrome-ui/tar.gz/977bd33",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
     "@mui/x-charts": "^9.7.0",
@@ -46,6 +47,7 @@
     "eslint": "^10.6.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
+    "sharp": "^0.35.5",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.62.0",
     "vite": "^7.0.0"

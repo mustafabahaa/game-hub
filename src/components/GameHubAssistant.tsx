@@ -1,5 +1,5 @@
-import { useEffect, useState, type SyntheticEvent } from 'react';
-import { Alert, Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Link, Paper, Stack, TextField, Tooltip, Typography } from '@monochrome-ui/design-system';
+import { useEffect, useState } from 'react';
+import { AssistantChat, Alert, Box, Button, Dialog, DialogContent, DialogTitle, IconButton, Link, Paper, Stack, Tooltip, Typography, type AssistantChatMessage } from '@monochrome-ui/design-system';
 import { CheckCircleIcon as Check, ExternalLinkIcon as ExternalLink, SendIcon as Send, SparkleIcon as Sparkles, CloseIcon as X } from '@/components/AppIcon';
 import { gamehubAssistantLib, type AssistantStreamChunk } from '@/libs/gamehubAssistant';
 
@@ -7,8 +7,8 @@ import { gamehubAssistantLib, type AssistantStreamChunk } from '@/libs/gamehubAs
 export function GameHubAssistant() {
   const [open, setOpen] = useState(false);
   const [connected, setConnected] = useState(false);
-  const [question, setQuestion] = useState('');
-  const [answer, setAnswer] = useState('');
+  const [draft, setDraft] = useState('');
+  const [messages, setMessages] = useState<AssistantChatMessage[]>([]);
   const [error, setError] = useState('');
   const [device, setDevice] = useState<{ verificationUrl: string; code: string; attemptId: string } | null>(null);
   const [pendingAction, setPendingAction] = useState<Extract<AssistantStreamChunk, { type: 'approval' }> | null>(null);
@@ -51,27 +51,34 @@ export function GameHubAssistant() {
     if (!pendingAction || approvalLoading) return;
     setApprovalLoading(true);
     try {
-      await gamehubAssistantLib.resolveAction(pendingAction.approvalId, decision);
+      await gamehubAssistantLib.resolveAction(pendingAction.id, decision);
       setPendingAction(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not resolve this assistant action.');
     } finally { setApprovalLoading(false); }
   };
 
-  const ask = async (event: SyntheticEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const value = question.trim();
+  const ask = async () => {
+    const value = draft.trim();
     if (!value) return;
-    setLoading(true); setError(''); setAnswer(''); setPendingAction(null);
+    setLoading(true); setError(''); setPendingAction(null);
+    const assistantId = crypto.randomUUID();
+    setMessages((previous) => [
+      ...previous,
+      { id: crypto.randomUUID(), role: 'user', content: value },
+      { id: assistantId, role: 'assistant', content: '', streaming: true, avatar: <Sparkles size={18} /> },
+    ]);
     const controller = new AbortController();
     try {
       const result = await gamehubAssistantLib.ask(value, controller.signal);
       for await (const chunk of result.stream) {
-        if (chunk.type === 'text') setAnswer((previous) => previous + chunk.text);
+        if (chunk.type === 'text') setMessages((previous) => previous.map((message) =>
+          message.id === assistantId ? { ...message, content: `${String(message.content)}${chunk.text}` } : message,
+        ));
         if (chunk.type === 'approval') setPendingAction(chunk);
       }
       await result.data;
-      setQuestion('');
+      setDraft('');
     } catch (cause) { setError(cause instanceof Error ? cause.message : 'The assistant could not answer right now.'); }
     finally { setLoading(false); }
   };
@@ -95,11 +102,15 @@ export function GameHubAssistant() {
           </Paper>}
         </> : <>
           <Alert severity="success" icon={<Check size={18} />}>ChatGPT Codex is connected.</Alert>
-          {answer && <Paper elevation={0} variant="messagePanel">{answer}</Paper>}
-          {pendingAction && <Paper elevation={0} component="section" role="alertdialog" aria-label="Approve assistant action" variant="approvalPanel">
+          <AssistantChat
+            messages={pendingAction ? [...messages, {
+              id: pendingAction.id,
+              role: 'assistant' as const,
+              avatar: <Sparkles size={18} />,
+              content: <Paper elevation={0} component="section" role="alertdialog" aria-label="Approve assistant action" variant="approvalPanel">
             <Typography variant="panelTitle">Approve this change?</Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{pendingAction.description}</Typography>
-            <Typography variant="subtitle2" sx={{ mt: 1.5 }}>{pendingAction.toolName.replaceAll('_', ' ')}</Typography>
+            <Typography variant="subtitle2" sx={{ mt: 1.5 }}>{pendingAction.name.replaceAll('_', ' ')}</Typography>
             <Paper elevation={0} component="pre" variant="codePanel">
               {JSON.stringify(pendingAction.input, null, 2)}
             </Paper>
@@ -107,15 +118,19 @@ export function GameHubAssistant() {
               <Button color="inherit" onClick={() => void resolveAction('denied')} disabled={approvalLoading}>Decline</Button>
               <Button variant="contained" onClick={() => void resolveAction('approved')} disabled={approvalLoading}>{approvalLoading ? 'Saving…' : 'Approve'}</Button>
             </Stack>
-          </Paper>}
-          <Box component="form" onSubmit={ask}><Stack spacing={1.5}>
-            <TextField fullWidth multiline minRows={3} maxRows={6} value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Which platform has the most accounts?" slotProps={{ htmlInput: { maxLength: 4000, 'aria-label': 'Ask the GameHub assistant' } }} />
-            <Stack direction="row" justifyContent="space-between">
-              <Button color="inherit" onClick={() => void disconnect()} disabled={loading}>Disconnect</Button>
-              <Button type="submit" variant="contained" disabled={!question.trim() || loading} endIcon={<Send size={16} />}>{loading ? 'Thinking…' : 'Ask'}</Button>
-            </Stack>
-          </Stack></Box>
-          <Typography variant="caption">The assistant can read your GameHub data and suggest updates. It will ask you to approve every change before it runs. Passwords and OTP secrets are not available to it.</Typography>
+              </Paper>,
+            }] : messages}
+            value={draft}
+            onChange={setDraft}
+            onSubmit={ask}
+            busy={loading}
+            placeholder="Which platform has the most accounts?"
+            inputLabel="Ask the GameHub assistant"
+            sendAdornment={<Send size={16} />}
+            emptyState={<Typography variant="body2" color="text.secondary">Ask about your saved accounts, games, and providers.</Typography>}
+            startAdornment={<Button color="inherit" onClick={() => void disconnect()} disabled={loading}>Disconnect</Button>}
+            footer={<Typography variant="caption" sx={{ px: 1.5, pb: 1.5 }}>The assistant can read your GameHub data and suggest updates. It will ask you to approve every change before it runs. Passwords and OTP secrets are not available to it.</Typography>}
+          />
         </>}
       </Stack></DialogContent>
     </Dialog>

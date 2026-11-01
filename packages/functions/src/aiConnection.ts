@@ -222,7 +222,7 @@ export const streamGamehubAiReply = onCall(
               const approvalRef = db.collection('gamehubAiToolApprovals').doc(approvalId);
               await approvalRef.create({ uid, toolName: name, state: 'pending', expiresAt: Date.now() + 90_000 });
               try {
-                await response.sendChunk({ type: 'approval', approvalId, toolName: name, description: definition.description, input: parsed.data });
+              await response.sendChunk({ type: 'approval', id: approvalId, name, description: definition.description, input: parsed.data });
                 const approved = await waitForToolApproval(approvalRef, signal);
                 if (!approved) return { result: { approved: false, message: 'The user declined this action. No changes were made.' } };
               } finally {

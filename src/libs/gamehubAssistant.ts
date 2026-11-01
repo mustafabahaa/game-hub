@@ -1,10 +1,10 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from '@/config/firebase';
+import type { AssistantStreamEvent } from '@monochrome-ai/core';
 
 export type AssistantStreamChunk =
-  | { type: 'text'; text: string }
+  | Extract<AssistantStreamEvent, { type: 'text' | 'approval' | 'error' }>
   | { type: 'device'; verificationUrl: string; code: string; attemptId: string }
-  | { type: 'approval'; approvalId: string; toolName: string; description: string; input: Record<string, unknown> }
   | { type: 'connected' | 'done' };
 
 function requireApp() {

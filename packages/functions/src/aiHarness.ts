@@ -1,10 +1,6 @@
-import { fork } from 'node:child_process';
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { HttpsError } from 'firebase-functions/v2/https';
-import { withProviderCredential, type ProviderCredential } from './aiCredentialStore.js';
+import { runCodexHarness } from '@monochrome-ai/core';
+import { withProviderCredential } from './aiCredentialStore.js';
 
 export type ClientTool = { name: string; description: string; schema: object };
 export type HarnessRequest = {
@@ -16,79 +12,27 @@ export type HarnessRequest = {
   onTool?: (call: { id: string; name: string; input: unknown }, signal: AbortSignal) => Promise<{ result?: unknown; error?: boolean }>;
 };
 
-const sourceDir = dirname(fileURLToPath(import.meta.url));
-const runnerPath = join(sourceDir, '../harness-runtime/runner.mjs');
-
 export async function runHarness(uid: string, request: HarnessRequest): Promise<string> {
   return withProviderCredential(uid, 'codex', async (credential, save) => {
     if (!credential) throw new HttpsError('failed-precondition', 'Connect your ChatGPT Codex account in GameHub settings first.');
-    request.signal?.throwIfAborted();
-    const lifetime = new AbortController();
-    const signal = request.signal ? AbortSignal.any([lifetime.signal, request.signal]) : lifetime.signal;
-    const home = await mkdtemp(join(tmpdir(), 'gamehub-ai-auth-'));
-    await (await import('node:fs/promises')).chmod(home, 0o700);
-    const authPath = join(home, 'auth.json');
-    let child: ReturnType<typeof fork> | undefined;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    let queue = Promise.resolve();
-    let output = '';
-    let completed = false;
-    let failure: unknown;
-    let toolCallCount = 0;
-    const stop = () => { child?.kill('SIGTERM'); };
     try {
-      await writeFile(authPath, JSON.stringify(credential), { mode: 0o600 });
-      child = fork(runnerPath, [], {
-        env: {
-          PATH: process.env.PATH ?? '/usr/bin:/bin',
-          LANG: 'C.UTF-8',
-          HOME: home,
-          CODEX_HOME: home,
-        },
-        stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+      return await runCodexHarness({
+        credential: credential as Record<string, unknown>,
+        saveCredential: (value) => save(value as typeof credential),
+        model: process.env.GAMEHUB_CODEX_MODEL || 'gpt-6-luna',
+        system: request.system,
+        prompt: typeof request.prompt === 'string' ? request.prompt : [request.prompt],
+        tools: request.tools ?? [],
+        toolPolicy: { activeTools: (request.tools ?? []).map((tool) => tool.name) },
+        signal: request.signal,
+        onText: request.onText,
+        onTool: request.onTool,
       });
-      const worker = child;
-      const exit = new Promise<number | null>((resolve, reject) => { worker.once('error', reject); worker.once('exit', resolve); });
-      signal.addEventListener('abort', stop, { once: true });
-      timer = setTimeout(() => { failure = new Error('AI request timed out'); lifetime.abort(); }, 210_000);
-      child.on('message', (message: { type?: string; text?: string; message?: string; id?: string; name?: string; input?: unknown }) => {
-        queue = queue.then(async () => {
-          if (message.type === 'text' && typeof message.text === 'string') {
-            output += message.text;
-            if (output.length > 200_000) throw new Error('AI response too large');
-            await request.onText?.(message.text);
-          }
-          if (message.type === 'error') failure = new Error(message.message || 'Harness failed');
-          if (message.type === 'done') completed = true;
-          if (message.type === 'tool-call') {
-            toolCallCount += 1;
-            if (toolCallCount > 12) throw new Error('AI tool-call limit reached for this turn');
-            if (!message.id || !message.name || !request.tools?.some((tool) => tool.name === message.name) || !request.onTool)
-              throw new Error('Unknown AI tool');
-            const result = await request.onTool({ id: message.id, name: message.name, input: message.input }, signal);
-            if (worker.connected) worker.send({ type: 'tool-result', id: message.id, ...result });
-          }
-        }).catch((error) => { failure = error; stop(); });
-      });
-      request.signal?.throwIfAborted();
-      child.send({ type: 'start', model: process.env.GAMEHUB_CODEX_MODEL || 'gpt-6-luna', system: request.system, prompt: request.prompt, tools: request.tools ?? [] });
-      const code = await exit;
-      lifetime.abort();
-      await queue;
+    } catch (error) {
       if (request.signal?.aborted) throw new HttpsError('cancelled', 'Request cancelled');
-      if (failure || !completed || code !== 0) throw classifyHarnessError(failure);
-      if (!output.trim()) throw new HttpsError('unavailable', 'The GameHub assistant returned an empty response. Try again.');
-      return output;
-    } finally {
-      clearTimeout(timer);
-      signal.removeEventListener('abort', stop);
-      lifetime.abort();
-      stop();
-      try {
-        // Codex may rotate credentials even if the model request failed.
-        await (await import('node:fs/promises')).chmod(authPath, 0o600);
-        await save(JSON.parse(await readFile(authPath, 'utf8')) as ProviderCredential);
-      } finally { await rm(home, { recursive: true, force: true }); }
+      if (error instanceof Error && /empty response/i.test(error.message))
+        throw new HttpsError('unavailable', 'The GameHub assistant returned an empty response. Try again.');
+      throw classifyHarnessError(error);
     }
   });
 }
