@@ -5,6 +5,10 @@ import { SnackbarProvider } from 'notistack';
 import '@monochrome-ui/design-system/tokens.css';
 import { AppProvider } from '@/contexts/AppContext';
 import { ThemeModeProvider } from '@/hooks/ThemeModeProvider';
+import { installVitePreloadErrorHandler } from '@/libs/chunkRecovery';
+
+// Recover once from stale-chunk preload failures before the app mounts.
+installVitePreloadErrorHandler();
 import App from './App';
 import './main.css';
 

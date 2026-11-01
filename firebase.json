@@ -1,40 +1,83 @@
 {
   "hosting": {
     "public": "dist",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
     "rewrites": [
-      { "source": "/mcp", "function": { "functionId": "gamehubMcp", "region": "us-central1" } },
-      { "source": "/.well-known/**", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
-      { "source": "/authorize", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
-      { "source": "/token", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
-      { "source": "/register", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
-      { "source": "/revoke", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
-      { "source": "/mcp-auth/**", "function": { "functionId": "gamehubMcpAuth", "region": "us-central1" } },
-      { "source": "**", "destination": "/index.html" }
+      {
+        "source": "/mcp",
+        "function": {
+          "functionId": "gamehubMcp",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/.well-known/**",
+        "function": {
+          "functionId": "gamehubMcpAuth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/authorize",
+        "function": {
+          "functionId": "gamehubMcpAuth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/token",
+        "function": {
+          "functionId": "gamehubMcpAuth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/register",
+        "function": {
+          "functionId": "gamehubMcpAuth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/revoke",
+        "function": {
+          "functionId": "gamehubMcpAuth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "/mcp-auth/**",
+        "function": {
+          "functionId": "gamehubMcpAuth",
+          "region": "us-central1"
+        }
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ],
     "headers": [
       {
-        "source": "/index.html",
+        "source": "**",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "no-store, no-cache, must-revalidate, max-age=0"
+          }
         ]
       },
       {
-        "source": "/",
+        "source": "/assets/**",
         "headers": [
-          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
-        ]
-      },
-      {
-        "source": "/providers",
-        "headers": [
-          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
-        ]
-      },
-      {
-        "source": "/providers/**",
-        "headers": [
-          { "key": "Cache-Control", "value": "no-store, no-cache, must-revalidate, max-age=0" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
         ]
       }
     ]
@@ -49,6 +92,8 @@
   "functions": {
     "source": "packages/functions",
     "runtime": "nodejs22",
-    "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    "predeploy": [
+      "npm --prefix \"$RESOURCE_DIR\" run build"
+    ]
   }
 }

@@ -15,7 +15,8 @@
     "deploy:firestore": "firebase deploy --only firestore",
     "deploy:storage": "firebase deploy --only storage",
     "deploy:functions": "npm run build:functions && firebase deploy --only functions",
-    "deploy:firebase": "firebase deploy"
+    "deploy:firebase": "firebase deploy",
+    "test": "vitest run"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -47,9 +48,11 @@
     "eslint": "^10.6.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.3",
+    "jsdom": "^30.1.3",
     "sharp": "^0.35.5",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.62.0",
-    "vite": "^7.0.0"
+    "vite": "^7.0.0",
+    "vitest": "^4.1.12"
   }
 }

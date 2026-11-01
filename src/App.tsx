@@ -1,6 +1,8 @@
-import { lazy, Suspense, useMemo } from 'react';
+import { Suspense, useMemo } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@monochrome-ui/design-system';
+import { AppUpdatePrompt } from '@/components/AppUpdatePrompt';
+import { lazyWithRetry } from '@/libs/lazyWithRetry';
 import { useThemeMode } from '@/hooks/useThemeMode';
 import { useAppContext } from '@/hooks/useAppContext';
 import { createAppTheme } from '@/theme';
@@ -14,10 +16,10 @@ import { SystemStatusPage } from '@/components/SystemStatusPage';
 import { AppErrorBoundary } from '@/components/AppErrorBoundary';
 
 // Lazy-load every route page so the main bundle stays small.
-const Dashboard = lazy(() => import('@/features/dashboard/Dashboard').then((m) => ({ default: m.Dashboard })));
-const AccountDetailPage = lazy(() => import('@/features/accounts/AccountDetailPage').then((m) => ({ default: m.AccountDetailPage })));
-const ProvidersPage = lazy(() => import('@/features/providers/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
-const ProviderDetailPage = lazy(() => import('@/features/providers/ProviderDetailPage').then((m) => ({ default: m.ProviderDetailPage })));
+const Dashboard = lazyWithRetry(() => import('@/features/dashboard/Dashboard').then((m) => ({ default: m.Dashboard })));
+const AccountDetailPage = lazyWithRetry(() => import('@/features/accounts/AccountDetailPage').then((m) => ({ default: m.AccountDetailPage })));
+const ProvidersPage = lazyWithRetry(() => import('@/features/providers/ProvidersPage').then((m) => ({ default: m.ProvidersPage })));
+const ProviderDetailPage = lazyWithRetry(() => import('@/features/providers/ProviderDetailPage').then((m) => ({ default: m.ProviderDetailPage })));
 
 export default function App() {
   const { resolvedMode } = useThemeMode();
@@ -29,6 +31,7 @@ export default function App() {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
+        <AppUpdatePrompt />
         <ConfigErrorScreen />
       </ThemeProvider>
     );
