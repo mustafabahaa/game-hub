@@ -56,6 +56,7 @@ export default tseslint.config(
       'monochrome-design/no-direct-ui-imports': 'error',
       'monochrome-design/no-visual-sx': 'error',
       'monochrome-design/named-typography-variants': 'error',
+      'monochrome-design/button-loading-prop': 'error',
       'monochrome-ui/known-variants': 'error',
       'monochrome-ui/routed-page-scaffold': ['error', {
         shell: 'src/components/app-shell/AppShell.tsx',

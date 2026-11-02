@@ -1,7 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { SnackbarProvider } from 'notistack';
 import '@monochrome-ui/design-system/tokens.css';
 import { AppProvider } from '@/contexts/AppContext';
 import { ThemeModeProvider } from '@/hooks/ThemeModeProvider';
@@ -27,9 +26,7 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <AppProvider>
         <ThemeModeProvider>
-          <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-            <App />
-          </SnackbarProvider>
+          <App />
         </ThemeModeProvider>
       </AppProvider>
     </QueryClientProvider>

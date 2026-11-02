@@ -100,7 +100,7 @@ function AccountDetailContent({ id }: { id?: string }) {
               <Button variant="quietAction" size="small" onClick={() => coverInput.current?.click()} startIcon={<Upload size={15} />} sx={{ minWidth: 0, px: 0, overflow: 'hidden' }}>
                 <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: 180, sm: 300 } }}>{coverFile?.name ?? 'Add cover image'}</Box>
               </Button>
-              <Button variant="contained" onClick={() => void addGame()} disabled={!gameTitle.trim() || createGame.isPending} startIcon={createGame.isPending ? <CircularProgress size={16} color="inherit" /> : <Plus size={17} />} sx={{ minHeight: 42, flexShrink: 0, px: 2.25 }}>Add game</Button>
+              <Button variant="contained" onClick={() => void addGame()} disabled={!gameTitle.trim()} loading={createGame.isPending} startIcon={<Plus size={17} />} sx={{ minHeight: 42, flexShrink: 0, px: 2.25 }}>Add game</Button>
             </Stack>
           </Stack>
         </Section>

@@ -12,3 +12,4 @@
 - Import shared components directly from `@monochrome-ui/design-system`; do not create app-level re-export adapters or duplicate shared components.
 - `npm run lint` runs `monochrome-ui/known-variants` against the installed shared package and checks every routed page listed in `eslint.config.js` inherits `PageScaffold` from the app shell. Keep that route list synchronized with `src/App.tsx`.
 - The GameHub app shell owns `PageScaffold`, which keeps page headings aligned to the shell baseline and applies the shared responsive inset to each page body.
+- Async Button and IconButton actions use the shared `loading` prop. Do not render `CircularProgress` inside a button or replace its stable action label with a spinner; `monochrome-design/button-loading-prop` enforces this.

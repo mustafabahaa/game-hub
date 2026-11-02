@@ -15,7 +15,6 @@ import {
   Switch,
   FormHelperText,
   Divider,
-  CircularProgress,
 } from '@monochrome-ui/design-system';
 import { GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
@@ -76,15 +75,15 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
 
   return (
     <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
-      <Box>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: 0, maxHeight: 'calc(100dvh - 64px)' }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexShrink: 0 }}>
           <Paper elevation={0} variant="iconBadge">
             <Gamepad2 size={18} />
           </Paper>
           <Typography variant="dialogTitle">{isEdit ? 'Edit Account' : 'New Account'}</Typography>
         </DialogTitle>
 
-        <DialogContent>
+        <DialogContent sx={{ minHeight: 0, flex: 1, overflowY: 'auto' }}>
           <Stack spacing={2} sx={{ mt: 1 }}>
             <TextField
               label="Account Name"
@@ -198,13 +197,13 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3 }}>
+        <DialogActions sx={{ px: 3, pb: 3, flexShrink: 0 }}>
           <Button onClick={onClose} variant="outlined">Cancel</Button>
           <Button
             onClick={handleSubmit}
             variant="contained"
             disabled={saving || !form.accountName || !form.email || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
-            startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}
+            loading={saving}
           >
             {isEdit ? 'Save Changes' : 'Add to Vault'}
           </Button>

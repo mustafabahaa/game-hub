@@ -10,7 +10,6 @@ import {
   Typography,
   TextField,
   Stack,
-  CircularProgress,
   InputAdornment,
   Divider,
 } from '@monochrome-ui/design-system';
@@ -117,7 +116,7 @@ function ProviderModalContent({ provider, onClose }: Omit<ProviderModalProps, 'o
 
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={onClose} variant="outlined">Cancel</Button>
-          <Button onClick={handleSubmit} variant="contained" disabled={saving || !form.name} startIcon={saving ? <CircularProgress size={16} color="inherit" /> : null}>
+          <Button onClick={handleSubmit} variant="contained" disabled={!form.name} loading={saving}>
             {isEdit ? 'Save Changes' : 'Add Provider'}
           </Button>
         </DialogActions>

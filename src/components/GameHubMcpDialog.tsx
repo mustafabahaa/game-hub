@@ -10,7 +10,8 @@ export function GameHubMcpDialog() {
   const [tokens, setTokens] = useState<McpToken[]>([]);
   const [newToken, setNewToken] = useState('');
   const [error, setError] = useState('');
-  const [busy, setBusy] = useState(false);
+  const [busy, setBusy] = useState<'create' | string | null>(null);
+  const [copyingToken, setCopyingToken] = useState(false);
 
   const listTokens = async () => {
     const result = await gamehubMcpLib.listTokens();
@@ -27,25 +28,37 @@ export function GameHubMcpDialog() {
   }, [open]);
 
   const createToken = async () => {
-    setBusy(true); setError(''); setNewToken('');
+    setBusy('create'); setError(''); setNewToken('');
     try {
       const result = await gamehubMcpLib.createToken(scope);
       setNewToken(result.token);
       await listTokens();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not create an MCP credential.');
-    } finally { setBusy(false); }
+    } finally { setBusy(null); }
   };
 
   const revoke = async (id: string) => {
-    setBusy(true); setError('');
+    setBusy(id); setError('');
     try {
       await gamehubMcpLib.revokeToken(id);
       setTokens((items) => items.filter((item) => item.id !== id));
       setNewToken('');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not revoke the credential.');
-    } finally { setBusy(false); }
+    } finally { setBusy(null); }
+  };
+
+  const copyToken = async () => {
+    if (!newToken) return;
+    setCopyingToken(true);
+    try {
+      await navigator.clipboard.writeText(newToken);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not copy the token.');
+    } finally {
+      setCopyingToken(false);
+    }
   };
 
   return (
@@ -72,14 +85,14 @@ export function GameHubMcpDialog() {
               Copy this token now. It will not be shown again.
               <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Typography component="code" variant="codeValue" sx={{ flex: 1 }}>{newToken}</Typography>
-                <IconButton aria-label="Copy MCP token" onClick={() => void navigator.clipboard.writeText(newToken)}><Copy size={16} /></IconButton>
+                <IconButton aria-label="Copy MCP token" onClick={() => void copyToken()} loading={copyingToken}><Copy size={16} /></IconButton>
               </Box>
             </Alert>}
             <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1}>
               <Select size="small" value={scope} onChange={(event) => setScope(event.target.value as TokenScope)} aria-label="New token permission">
                 <MenuItem value="read">Read only</MenuItem><MenuItem value="write">Read and write</MenuItem>
               </Select>
-              <Button variant="contained" onClick={() => void createToken()} disabled={busy}>Create token</Button>
+              <Button variant="contained" onClick={() => void createToken()} loading={busy === 'create'} disabled={Boolean(busy)}>Create token</Button>
             </Stack>
             <Typography variant="overline">Active tokens</Typography>
             {tokens.length === 0 && <Typography variant="body2">No active tokens.</Typography>}
@@ -88,7 +101,7 @@ export function GameHubMcpDialog() {
                 <Typography variant="body2">{token.scope === 'write' ? 'Read and write' : 'Read only'}</Typography>
                 <Typography variant="caption">Expires {new Date(token.expiresAt).toLocaleDateString()}</Typography>
               </Box>
-              <Button size="small" color="error" disabled={busy} onClick={() => void revoke(token.id)}>Revoke</Button>
+              <Button size="small" color="error" loading={busy === token.id} disabled={Boolean(busy)} onClick={() => void revoke(token.id)}>Revoke</Button>
             </Paper>)}
             <Typography variant="caption">Write tokens can change vault data. Deletions also require per-action confirmation.</Typography>
           </Stack>

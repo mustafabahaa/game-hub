@@ -1,6 +1,7 @@
 import { Suspense, useMemo } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, CssBaseline } from '@monochrome-ui/design-system';
+import { SnackbarProvider } from 'notistack';
 import { AppUpdatePrompt } from '@/components/AppUpdatePrompt';
 import { lazyWithRetry } from '@/libs/lazyWithRetry';
 import { useThemeMode } from '@/hooks/useThemeMode';
@@ -31,8 +32,10 @@ export default function App() {
     return (
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <AppUpdatePrompt />
-        <ConfigErrorScreen />
+        <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+          <AppUpdatePrompt />
+          <ConfigErrorScreen />
+        </SnackbarProvider>
       </ThemeProvider>
     );
   }
@@ -45,9 +48,11 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BrowserRouter>
-        <AppErrorBoundary>
-          <Routes>
+      <SnackbarProvider maxSnack={3} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <AppUpdatePrompt />
+        <BrowserRouter>
+          <AppErrorBoundary>
+            <Routes>
             <Route path="/mcp/authorize" element={user ? <McpAuthorizePage /> : <AuthScreen />} />
             {user ? (
               <>
@@ -69,9 +74,10 @@ export default function App() {
                 <Route path="*" element={<SystemStatusPage status="notFound" />} />
               </>
             )}
-          </Routes>
-        </AppErrorBoundary>
-      </BrowserRouter>
+            </Routes>
+          </AppErrorBoundary>
+        </BrowserRouter>
+      </SnackbarProvider>
     </ThemeProvider>
   );
 }

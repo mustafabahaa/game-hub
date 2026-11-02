@@ -71,14 +71,26 @@ export function Dashboard() {
               variant={platform === p ? 'filterSelected' : 'filter'}
             />
           ))}
-          <Box sx={{ flex: 1 }} />
-          <Chip label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="filterAction" />
+          <Chip label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="filterAction" sx={{ ml: 'auto' }} />
         </Stack>
 
         {/* Loading */}
         {isLoading && (
-          <Box sx={{ display: 'grid', gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(3, 1fr)', md: 'repeat(3, 1fr)', lg: 'repeat(4, 1fr)' }, gap: 2.5 }}>
-            {SKELETON_KEYS.map((i) => <AccountCardSkeleton key={i} />)}
+          <Box sx={{ columnCount: { xs: 1, sm: 2, md: 3, lg: 4 }, columnGap: '20px' }}>
+            {SKELETON_KEYS.map((i) => (
+              <Box
+                key={i}
+                sx={{
+                  display: 'inline-block',
+                  width: '100%',
+                  mb: '20px',
+                  breakInside: 'avoid',
+                  verticalAlign: 'top',
+                }}
+              >
+                <AccountCardSkeleton />
+              </Box>
+            ))}
           </Box>
         )}
 
@@ -96,9 +108,9 @@ export function Dashboard() {
           </Paper>
         )}
 
-        {/* Account grid — 4-up desktop, 2-up mobile. Each card ~280px+ wide. */}
+        {/* Keep account cards wide enough for their platform and account-type overlays. */}
         {!isLoading && filtered.length > 0 && (
-          <Box sx={{ columnCount: { xs: 2, sm: 3, lg: 4 }, columnGap: '20px' }}>
+          <Box sx={{ columnCount: { xs: 1, sm: 2, md: 3, lg: 4 }, columnGap: '20px' }}>
             {filtered.map((account) => (
               <Box key={account.id} onClick={() => navigate(`/accounts/${account.id}`)} sx={{ display: 'inline-block', width: '100%', mb: '20px', breakInside: 'avoid', verticalAlign: 'top', cursor: 'pointer' }}>
                 <AccountCard account={account} onDelete={setToDelete} />

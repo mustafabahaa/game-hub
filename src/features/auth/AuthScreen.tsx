@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Box, Typography, Button, Alert, Stack, CircularProgress, BrandMark } from '@monochrome-ui/design-system';
+import { Box, Typography, Button, Alert, Stack, BrandMark } from '@monochrome-ui/design-system';
 import { useAppContext } from '@/hooks/useAppContext';
 
 function GoogleIcon() {
@@ -51,10 +51,10 @@ export function AuthScreen() {
             fullWidth
             variant="primaryAction"
             onClick={handleSignIn}
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={18} color="inherit" /> : <GoogleIcon />}
+            loading={loading}
+            startIcon={<GoogleIcon />}
           >
-            {loading ? 'Connecting…' : 'Continue with Google'}
+            Continue with Google
           </Button>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 2.5, textAlign: 'center' }}>
             Secure sign-in · Your account details stay private

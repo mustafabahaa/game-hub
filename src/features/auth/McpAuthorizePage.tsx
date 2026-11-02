@@ -10,7 +10,7 @@ export function McpAuthorizePage() {
   const [request, setRequest] = useState<ConsentRequest | null>(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState<'approve' | 'deny' | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -26,7 +26,7 @@ export function McpAuthorizePage() {
   }, [requestId]);
 
   const decide = async (decision: 'approve' | 'deny') => {
-    setSubmitting(true);
+    setSubmitting(decision);
     setError('');
     try {
       const idToken = await authLib.getCurrentIdToken();
@@ -41,7 +41,7 @@ export function McpAuthorizePage() {
       window.location.assign(data.redirectUrl);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not complete the connection.');
-      setSubmitting(false);
+      setSubmitting(null);
     }
   };
 
@@ -64,8 +64,8 @@ export function McpAuthorizePage() {
             </Paper>
             {error && <Alert severity="error">{error}</Alert>}
             <Stack direction={{ xs: 'column-reverse', sm: 'row' }} spacing={1.5}>
-              <Button fullWidth variant="outlined" disabled={submitting} onClick={() => void decide('deny')} startIcon={<X size={16} />}>Deny</Button>
-              <Button fullWidth variant="contained" disabled={submitting} onClick={() => void decide('approve')} startIcon={submitting ? <CircularProgress size={16} color="inherit" /> : <Check size={16} />}>Approve</Button>
+              <Button fullWidth variant="outlined" loading={submitting === 'deny'} disabled={Boolean(submitting)} onClick={() => void decide('deny')} startIcon={<X size={16} />}>Deny</Button>
+              <Button fullWidth variant="contained" loading={submitting === 'approve'} disabled={Boolean(submitting)} onClick={() => void decide('approve')} startIcon={<Check size={16} />}>Approve</Button>
             </Stack>
           </>}
         </Stack>

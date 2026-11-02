@@ -88,12 +88,12 @@ export function GameHubAssistant() {
       <IconButton aria-label="Ask GameHub" onClick={() => { setOpen(true); setError(''); }} variant="utilityAction"><Sparkles size={18} /></IconButton>
     </Tooltip>
     <Dialog open={open} onClose={() => { if (pendingAction) void resolveAction('denied'); setOpen(false); }} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1.5 }}><Sparkles size={19} /><Box sx={{ flex: 1 }}>GameHub assistant</Box><IconButton aria-label="Close assistant" onClick={() => { if (pendingAction) void resolveAction('denied'); setOpen(false); }}><X size={18} /></IconButton></DialogTitle>
+      <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, pr: 1.5 }}><Sparkles size={19} /><Box sx={{ flex: 1 }}>GameHub assistant</Box><IconButton aria-label="Close assistant" loading={approvalLoading} onClick={() => { if (pendingAction) void resolveAction('denied'); setOpen(false); }}><X size={18} /></IconButton></DialogTitle>
       <DialogContent sx={{ pt: 1 }}><Stack spacing={2}>
         <Typography variant="body2">Connect your ChatGPT Codex account to get help with your GameHub data.</Typography>
         {error && <Alert severity="error">{error}</Alert>}
         {!connected ? <>
-          <Button variant="contained" onClick={() => void connect()} disabled={loading}>{loading ? 'Waiting for Codex…' : 'Connect ChatGPT Codex'}</Button>
+          <Button variant="contained" onClick={() => void connect()} loading={loading}>Connect ChatGPT Codex</Button>
           {device && <Paper elevation={0} variant="infoPanel">
             <Typography variant="panelTitle">Finish connecting your account</Typography>
             <Typography variant="body2" sx={{ mt: 1 }}>Open the device sign-in page, enter this code, and approve access. Keep GameHub open while you do this.</Typography>
@@ -115,8 +115,8 @@ export function GameHubAssistant() {
               {JSON.stringify(pendingAction.input, null, 2)}
             </Paper>
             <Stack direction="row" justifyContent="flex-end" spacing={1}>
-              <Button color="inherit" onClick={() => void resolveAction('denied')} disabled={approvalLoading}>Decline</Button>
-              <Button variant="contained" onClick={() => void resolveAction('approved')} disabled={approvalLoading}>{approvalLoading ? 'Saving…' : 'Approve'}</Button>
+              <Button color="inherit" onClick={() => void resolveAction('denied')} loading={approvalLoading}>Decline</Button>
+              <Button variant="contained" onClick={() => void resolveAction('approved')} loading={approvalLoading}>Approve</Button>
             </Stack>
               </Paper>,
             }] : messages}
@@ -128,7 +128,7 @@ export function GameHubAssistant() {
             inputLabel="Ask the GameHub assistant"
             sendAdornment={<Send size={16} />}
             emptyState={<Typography variant="body2" color="text.secondary">Ask about your saved accounts, games, and providers.</Typography>}
-            startAdornment={<Button color="inherit" onClick={() => void disconnect()} disabled={loading}>Disconnect</Button>}
+            startAdornment={<Button color="inherit" onClick={() => void disconnect()} loading={loading}>Disconnect</Button>}
             footer={<Typography variant="caption" sx={{ px: 1.5, pb: 1.5 }}>The assistant can read your GameHub data and suggest updates. It will ask you to approve every change before it runs. Passwords and OTP secrets are not available to it.</Typography>}
           />
         </>}
