@@ -1,31 +1,50 @@
-import { defineConfig, type Plugin } from 'vite';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
+import { VitePWA } from 'vite-plugin-pwa';
 import path from 'path';
 
-// Stable per-deploy release id: the commit sha in CI, otherwise build time.
-const BUILD_ID = process.env.GITHUB_SHA ?? Date.now().toString(36);
-
-// Stamps the release id into index.html so the client (releaseCheck.ts) can
-// compare its running build against a freshly fetched document.
-function buildIdMeta(): Plugin {
-  return {
-    name: 'gamehub-build-id',
-    transformIndexHtml(html) {
-      return html.replace('</head>', `    <meta name="build-id" content="${BUILD_ID}" />\n  </head>`);
-    },
-  };
-}
-
 export default defineConfig({
-  define: {
-    __BUILD_ID__: JSON.stringify(BUILD_ID),
-  },
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
   },
-  plugins: [react(), buildIdMeta()],
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'prompt',
+      includeAssets: [
+        'favicon-light.png',
+        'logo-black.png',
+        'icons/apple-touch-icon.png',
+        'icons/icon-192.png',
+        'icons/icon-512.png',
+        'icons/maskable-192.png',
+        'icons/maskable-512.png',
+      ],
+      // The manifest link lives in index.html; the app name/artwork is owned
+      // by the icon pipeline (npm run icons).
+      manifest: false,
+      // Registration happens in AppUpdatePrompt via virtual:pwa-register so a
+      // waiting build prompts the user instead of activating mid-session.
+      injectRegister: false,
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5_000_000,
+        // skipWaiting must stay off: an immediate activation swaps the
+        // precache under the running app and breaks lazy navigation.
+        // clientsClaim only takes over uncontrolled first loads (safe).
+        skipWaiting: false,
+        clientsClaim: true,
+        // OAuth and MCP endpoints must reach the server rather than the offline app shell.
+        navigateFallbackDenylist: [
+          /^\/(?:authorize|token|register|revoke)(?:[/?]|$)/,
+          /^\/\.well-known\//,
+          /^\/mcp-auth\//,
+          /^\/mcp(?:[?]|$)/,
+        ],
+      },
+    }),
+  ],
   build: {
     chunkSizeWarningLimit: 600,
     rollupOptions: {

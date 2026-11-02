@@ -1,21 +1,41 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { closeSnackbar, useSnackbar } from 'notistack';
 import { Button } from '@monochrome-ui/design-system';
-import { startReleaseCheck } from '@/libs/releaseCheck';
+import { registerSW } from 'virtual:pwa-register';
 
 /**
- * Prompts the user when a newer deployment is detected (see releaseCheck.ts).
- * GameHub has no service worker, so accepting the prompt reloads the page to
- * pick up fresh HTML; the reload only ever happens on explicit user action,
- * so unsaved work and active operations are never interrupted.
+ * Prompts the user when a new service-worker build is waiting, instead of the
+ * old autoUpdate behaviour where a mid-session skipWaiting activation could
+ * swap the precache under the running app and break the next lazy navigation.
+ * The app only ever reloads on explicit user action, so unsaved work and
+ * active operations are never interrupted.
  */
+let notifyUpdateAvailable: (() => void) | null = null;
+let dismissedForSession = false;
+
+const updateServiceWorker = registerSW({
+  immediate: true,
+  onNeedRefresh: () => {
+    if (!dismissedForSession) notifyUpdateAvailable?.();
+  },
+  // Installed Home Screen apps can stay open for days; re-check for a
+  // waiting build hourly and whenever the app returns to the foreground.
+  onRegisteredSW: (swUrl: string, registration: ServiceWorkerRegistration | undefined) => {
+    void swUrl;
+    if (!registration) return;
+    window.setInterval(() => void registration.update().catch(() => {}), 60 * 60 * 1000);
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') void registration.update().catch(() => {});
+    });
+  },
+  onRegisterError: (error) => console.error('Service worker registration failed', error),
+});
+
 export function AppUpdatePrompt() {
   const { enqueueSnackbar } = useSnackbar();
-  const dismissedRef = useRef(false);
 
   useEffect(() => {
-    return startReleaseCheck(() => {
-      if (dismissedRef.current) return;
+    notifyUpdateAvailable = () => {
       enqueueSnackbar('A new version of GameHub is available.', {
         key: 'app-update-available',
         variant: 'default',
@@ -27,8 +47,8 @@ export function AppUpdatePrompt() {
               variant="text"
               color="inherit"
               onClick={() => {
-                dismissedRef.current = true;
                 closeSnackbar(snackbarId);
+                dismissedForSession = true;
               }}
             >
               Later
@@ -38,7 +58,7 @@ export function AppUpdatePrompt() {
               variant="contained"
               onClick={() => {
                 closeSnackbar(snackbarId);
-                window.location.reload();
+                void updateServiceWorker(true);
               }}
             >
               Update
@@ -46,7 +66,11 @@ export function AppUpdatePrompt() {
           </>
         ),
       });
-    });
+    };
+
+    return () => {
+      notifyUpdateAvailable = null;
+    };
   }, [enqueueSnackbar]);
 
   return null;
