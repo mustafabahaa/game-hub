@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Box } from '@monochrome-ui/design-system';
+import { Box, PageScaffold } from '@monochrome-ui/design-system';
 import { TopBar } from './TopBar';
 import { DesktopNav } from './DesktopNav';
 import { BottomNav } from './BottomNav';
@@ -35,7 +35,9 @@ export function AppShell() {
       <DesktopNav />
       <TopBar />
       <Box component="main" id="main-content" sx={{ py: { xs: 2.5, sm: 4 }, px: { xs: 2, sm: 3, md: 4, lg: 5 }, width: '100%', maxWidth: 1440, minWidth: 0, mx: 'auto' }}>
-        <Outlet />
+        <PageScaffold>
+          <Outlet />
+        </PageScaffold>
       </Box>
       <BottomNav />
     </Box>

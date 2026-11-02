@@ -1,4 +1,4 @@
-# Kippa UI Rules
+# GameHub UI Rules
 
 - The shared `@monochrome-ui/design-system` package from `github.com/mustafabahaa/monochrome-ui` is the single source of truth for component appearance.
 - Application views must import UI primitives and components from the shared design-system package, never directly from MUI. The package may re-export MUI primitives, but should also expose reusable project components and named variants through the same public API. Framework/theme utilities may be imported from MUI's non-component entry points when needed.
@@ -9,3 +9,6 @@
 - Feature components must not recreate visual appearance through `sx`. Use `sx` only for layout and positioning concerns such as grid placement, flex alignment, sizing constraints, spacing between regions, responsive placement, and sticky/fixed coordinates.
 - Typography appearance must use named theme variants. Do not set font size, weight, line height, letter spacing, or text transformation ad hoc in feature components.
 - Icons must use the shared `AppIcon` Iconsax adapters; do not import icon libraries directly into features.
+- Import shared components directly from `@monochrome-ui/design-system`; do not create app-level re-export adapters or duplicate shared components.
+- `npm run lint` runs `monochrome-ui/known-variants` against the installed shared package and checks every routed page listed in `eslint.config.js` inherits `PageScaffold` from the app shell. Keep that route list synchronized with `src/App.tsx`.
+- The GameHub app shell owns `PageScaffold`, which keeps page headings aligned to the shell baseline and applies the shared responsive inset to each page body.

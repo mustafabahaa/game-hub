@@ -2,6 +2,7 @@ import js from '@eslint/js';
 import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import tseslint from 'typescript-eslint';
+import monochromeUi from '@monochrome-ui/design-system/eslint';
 import architectureRules from './eslint-rules/architecture.js';
 import designSystemRules from './eslint-rules/design-system.js';
 
@@ -41,6 +42,7 @@ export default tseslint.config(
       'react-refresh': reactRefresh,
       'monochrome-architecture': { rules: architectureRules },
       'monochrome-design': { rules: designSystemRules },
+      'monochrome-ui': monochromeUi,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
@@ -54,6 +56,16 @@ export default tseslint.config(
       'monochrome-design/no-direct-ui-imports': 'error',
       'monochrome-design/no-visual-sx': 'error',
       'monochrome-design/named-typography-variants': 'error',
+      'monochrome-ui/known-variants': 'error',
+      'monochrome-ui/routed-page-scaffold': ['error', {
+        shell: 'src/components/app-shell/AppShell.tsx',
+        pages: [
+          'src/features/dashboard/Dashboard.tsx',
+          'src/features/accounts/AccountDetailPage.tsx',
+          'src/features/providers/ProvidersPage.tsx',
+          'src/features/providers/ProviderDetailPage.tsx',
+        ],
+      }],
     },
   },
 );

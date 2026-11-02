@@ -64,7 +64,7 @@ export function TopBar() {
               </IconButton>
             </Tooltip>
             <Tooltip title="Account" disableFocusListener>
-              <IconButton variant="accountTrigger" onClick={(event: MouseEvent<HTMLElement>) => setMenuEl(event.currentTarget)} aria-label="Account menu">
+              <IconButton variant="userMenuTrigger" onClick={(event: MouseEvent<HTMLElement>) => setMenuEl(event.currentTarget)} aria-label="Account menu">
                 <Avatar variant="profile" src={user?.photoURL ?? undefined}>
                   {!user?.photoURL ? initials : null}
                 </Avatar>
@@ -90,8 +90,8 @@ export function TopBar() {
             {!user?.photoURL ? initials : null}
           </Avatar>
           <Box sx={{ minWidth: 0 }}>
-            <Typography variant="profileName" noWrap>{user?.displayName || 'GameHub account'}</Typography>
-            <Typography variant="profileDetail" noWrap>{user?.email}</Typography>
+            <Typography variant="userName" noWrap>{user?.displayName || 'GameHub account'}</Typography>
+            <Typography variant="userDetail" noWrap>{user?.email}</Typography>
           </Box>
         </Box>
         <Divider sx={{ my: 1, mx: 1.5 }} />
