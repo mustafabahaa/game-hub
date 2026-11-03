@@ -32,17 +32,22 @@ export function TopBar() {
       sx={{ pt: { xs: 'calc(env(safe-area-inset-top, 0px) + 4px)', md: 0 }, zIndex: 1100 }}
     >
       <Toolbar sx={{ px: { xs: 2, sm: 3, md: 4 }, minHeight: { xs: 62, sm: 68, md: 64 } }}>
-          <Box sx={{ width: '100%', maxWidth: 1360, mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Box sx={{ width: '100%', maxWidth: 1360, mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: { xs: 1, sm: 2 }, minWidth: 0 }}>
           <BrandButton
             component="button" type="button"
             onClick={() => navigate('/')} aria-label="GameHub home"
             sx={{
               display: { xs: 'flex', md: 'none' }, flexShrink: 0, minWidth: 0, cursor: 'pointer',
-              flexDirection: 'row', gap: 1.25,
+              flexDirection: 'row', gap: { xs: 0.75, sm: 1.25 },
             }}
           >
             <BrandMark src="/logo-black.png" alt="" size={34} />
-            <Typography variant="brandWordmark">GameHub</Typography>
+            <Typography
+              variant="brandWordmark"
+              sx={{ '@media (max-width: 359px)': { display: 'none' } }}
+            >
+              GameHub
+            </Typography>
           </BrandButton>
 
           <Stack direction="row" alignItems="center" spacing={1.25} sx={{ display: { xs: 'none', md: 'flex' } }}>
@@ -51,7 +56,7 @@ export function TopBar() {
             <Typography variant="breadcrumbCurrent">{section}</Typography>
           </Stack>
 
-          <Stack direction="row" spacing={0.5} alignItems="center">
+          <Stack direction="row" spacing={{ xs: 0.25, sm: 0.5 }} alignItems="center" sx={{ flexShrink: 0 }}>
             {areGamehubFunctionsEnabled && <GameHubAssistant />}
             {areGamehubFunctionsEnabled && <GameHubMcpDialog />}
             <Tooltip title={`Switch to ${theme.palette.mode === 'dark' ? 'light' : 'dark'} mode`} disableFocusListener>
