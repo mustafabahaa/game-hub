@@ -19,7 +19,7 @@ import {
 import { GamepadIcon as Gamepad2 } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useCreateAccount, useUpdateAccount } from '@/hooks/useGamehub';
-import type { Account, AccountFormData, AccountType, LifecycleType, Platform } from '@/domain/types';
+import type { Account, AccountFormData, AccountType, Platform } from '@/domain/types';
 
 interface AccountModalProps {
   open: boolean;
@@ -119,34 +119,26 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
             {/* Platform */}
             <Box>
               <Typography variant="overline" sx={{ display: 'block', mb: 1 }}>Platform</Typography>
-              <ToggleButtonGroup
-                exclusive
+              <ResponsiveToggleButtonGroup
+                ariaLabel="Platform"
                 value={form.platform}
-                onChange={(event, value) => { void event; if (value) setForm({ ...form, platform: value }); }}
-                fullWidth
-                size="small"
-              >
-                {PLATFORMS.map((p) => (
-                  <ToggleButton key={p} value={p}>{p}</ToggleButton>
-                ))}
-              </ToggleButtonGroup>
+                options={PLATFORMS.map((platform) => ({ value: platform, label: platform }))}
+                onChange={(value) => {
+                  if (value) setForm({ ...form, platform: value });
+                }}
+              />
             </Box>
 
             {/* Account type (PlayStation only) */}
             {form.platform === 'PlayStation' && (
               <Box>
                 <Typography variant="overline" sx={{ display: 'block', mb: 1 }}>Account Type</Typography>
-                <ToggleButtonGroup
-                  exclusive
+                <ResponsiveToggleButtonGroup
+                  ariaLabel="Account type"
                   value={form.accountType ?? ''}
-                  onChange={(event, value) => { void event; setForm({ ...form, accountType: (value as AccountType) || null }); }}
-                  fullWidth
-                  size="small"
-                >
-                  {ACCOUNT_TYPES.map((t) => (
-                    <ToggleButton key={t} value={t}>{t}</ToggleButton>
-                  ))}
-                </ToggleButtonGroup>
+                  options={ACCOUNT_TYPES.map((accountType) => ({ value: accountType, label: accountType }))}
+                  onChange={(value) => setForm({ ...form, accountType: value })}
+                />
                 <Box sx={{ mt: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, minHeight: 52 }}>
                   <Stack spacing={0.25} sx={{ minWidth: 0 }}>
                     <Typography variant="settingLabel">PlayStation Plus</Typography>
@@ -168,16 +160,17 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
             {/* Lifecycle */}
             <Box>
               <Typography variant="overline" sx={{ display: 'block', mb: 1 }}>Access period</Typography>
-              <ToggleButtonGroup
-                exclusive
+              <ResponsiveToggleButtonGroup
+                ariaLabel="Access period"
                 value={form.lifecycleType}
-                onChange={(event, value) => { void event; if (value) setForm({ ...form, lifecycleType: value as LifecycleType }); }}
-                fullWidth
-                size="small"
-              >
-                <ToggleButton value="lifetime">Lifetime</ToggleButton>
-                <ToggleButton value="expires_on">Set expiry date</ToggleButton>
-              </ToggleButtonGroup>
+                options={[
+                  { value: 'lifetime' as const, label: 'Lifetime' },
+                  { value: 'expires_on' as const, label: 'Set expiry date' },
+                ]}
+                onChange={(value) => {
+                  if (value) setForm({ ...form, lifecycleType: value });
+                }}
+              />
               <FormHelperText sx={{ ml: 0, mt: 1 }}>
                 Choose Lifetime for ongoing access, or set a date to track when it expires.
               </FormHelperText>
@@ -197,16 +190,25 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
           </Stack>
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3, flexShrink: 0 }}>
-          <Button onClick={onClose} variant="outlined">Cancel</Button>
-          <Button
-            onClick={handleSubmit}
-            variant="contained"
-            disabled={saving || !form.accountName || !form.email || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
-            loading={saving}
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, flexShrink: 0 }}>
+          <Stack
+            direction={{ xs: 'column-reverse', sm: 'row' }}
+            spacing={1}
+            sx={{ width: '100%', justifyContent: 'flex-end' }}
           >
-            {isEdit ? 'Save Changes' : 'Add to Vault'}
-          </Button>
+            <Button onClick={onClose} variant="outlined" sx={{ width: { xs: '100%', sm: 'auto' } }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmit}
+              variant="contained"
+              disabled={saving || !form.accountName || !form.email || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
+              loading={saving}
+              sx={{ width: { xs: '100%', sm: 'auto' }, whiteSpace: 'nowrap' }}
+            >
+              {isEdit ? 'Save Changes' : 'Add to Vault'}
+            </Button>
+          </Stack>
         </DialogActions>
       </Box>
     </Dialog>
@@ -226,4 +228,51 @@ function emptyForm(): AccountFormData {
     lifecycleType: 'lifetime',
     expiresOn: '',
   };
+}
+
+type ResponsiveChoice<T extends string> = {
+  value: T;
+  label: string;
+};
+
+interface ResponsiveToggleButtonGroupProps<T extends string> {
+  ariaLabel: string;
+  value: T | '' | null;
+  options: ResponsiveChoice<T>[];
+  onChange: (value: T | null) => void;
+}
+
+function ResponsiveToggleButtonGroup<T extends string>({
+  ariaLabel,
+  value,
+  options,
+  onChange,
+}: ResponsiveToggleButtonGroupProps<T>) {
+  const renderGroup = (orientation: 'horizontal' | 'vertical') => (
+    <ToggleButtonGroup
+      aria-label={ariaLabel}
+      exclusive
+      orientation={orientation}
+      value={value}
+      onChange={(event, nextValue) => {
+        void event;
+        onChange(nextValue as T | null);
+      }}
+      fullWidth
+      size="small"
+    >
+      {options.map((option) => (
+        <ToggleButton key={option.value} value={option.value}>
+          {option.label}
+        </ToggleButton>
+      ))}
+    </ToggleButtonGroup>
+  );
+
+  return (
+    <>
+      <Box sx={{ display: { xs: 'block', sm: 'none' }, width: '100%' }}>{renderGroup('vertical')}</Box>
+      <Box sx={{ display: { xs: 'none', sm: 'block' }, width: '100%' }}>{renderGroup('horizontal')}</Box>
+    </>
+  );
 }

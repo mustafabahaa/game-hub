@@ -1,7 +1,7 @@
 /** Games data-access — subcollection under each account. */
 import { listDocs, setDocById, deleteByPath, userCollectionPath } from './db';
 import { deleteByUrl, uploadImage } from './storage';
-import type { Game } from '@/domain/types';
+import type { Game, GameFormData } from '@/domain/types';
 
 export const gamesLib = {
   gamesCollectionPath(uid: string, accountId: string): string {
@@ -18,7 +18,7 @@ export const gamesLib = {
   async create(
     uid: string,
     accountId: string,
-    title: string,
+    form: GameFormData,
     imageFile: File | null,
   ): Promise<string> {
     const id = crypto.randomUUID();
@@ -29,11 +29,19 @@ export const gamesLib = {
     }
     await setDocById(this.gamesCollectionPath(uid, accountId), id, {
       accountId,
-      title,
+      ...form,
+      providerId: form.providerId || null,
       imageUrl,
       createdAt: new Date().toISOString(),
     });
     return id;
+  },
+
+  async update(uid: string, accountId: string, gameId: string, form: Partial<GameFormData>): Promise<void> {
+    await setDocById(this.gamesCollectionPath(uid, accountId), gameId, {
+      ...form,
+      updatedAt: new Date().toISOString(),
+    });
   },
 
   async delete(uid: string, accountId: string, game: Game): Promise<void> {

@@ -14,6 +14,7 @@ export interface Game {
   accountId: string;
   title: string;
   imageUrl?: string | null;
+  providerId?: string | null;
   createdAt: string;
 }
 
@@ -21,6 +22,7 @@ export interface Game {
 export interface GameFormData {
   title: string;
   imageUrl?: string | null;
+  providerId?: string | null;
 }
 
 export interface Account {

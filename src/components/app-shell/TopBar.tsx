@@ -1,14 +1,13 @@
 import { useState, type MouseEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '@mui/material/styles';
-import { AppBar, Toolbar, Box, Typography, IconButton, Menu, MenuItem, Avatar, Stack, BrandButton, Tooltip, Divider, ListItemIcon, ListItemText } from '@monochrome-ui/design-system';
+import { AppBar, Toolbar, Box, Typography, IconButton, Menu, MenuItem, Avatar, Stack, BrandButton, Tooltip, Divider, ListItemIcon, ListItemText, BrandMark } from '@monochrome-ui/design-system';
 import { LogoutIcon as LogOut, DarkModeIcon as Moon, LightModeIcon as Sun } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useThemeMode } from '@/hooks/useThemeMode';
 import { GameHubAssistant } from '@/components/GameHubAssistant';
 import { GameHubMcpDialog } from '@/components/GameHubMcpDialog';
 import { areGamehubFunctionsEnabled } from '@/libs/appConfig';
-import { BrandMark } from '@monochrome-ui/design-system';
 
 const SECTIONS: Array<[string, string]> = [
   ['/', 'Vault'], ['/providers', 'Providers'],
@@ -70,8 +69,8 @@ export function TopBar() {
             </Tooltip>
             <Tooltip title="Account" disableFocusListener>
               <IconButton variant="userMenuTrigger" onClick={(event: MouseEvent<HTMLElement>) => setMenuEl(event.currentTarget)} aria-label="Account menu">
-                <Avatar variant="profile" src={user?.photoURL ?? undefined}>
-                  {!user?.photoURL ? initials : null}
+                <Avatar variant="profile" src={user?.photoURL ?? undefined} alt={user?.displayName || 'Profile picture'}>
+                  {initials}
                 </Avatar>
               </IconButton>
             </Tooltip>
@@ -86,23 +85,26 @@ export function TopBar() {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         transformOrigin={{ vertical: 'top', horizontal: 'right' }}
         slotProps={{
-          paper: { variant: 'popoverMenuSurface', sx: { width: { xs: 'min(240px, calc(100vw - 32px))', sm: 240 } } },
-          list: { sx: { py: 1, px: 0.5 } },
+          paper: {
+            elevation: 0,
+            variant: 'navigationMenu',
+            sx: { mt: 1.5, minWidth: 280, width: { xs: 'min(280px, calc(100vw - 32px))', sm: 280 } },
+          },
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, px: 2, py: 1.5 }}>
-          <Avatar variant="profile" src={user?.photoURL ?? undefined} sx={{ width: 36, height: 36, flexShrink: 0 }}>
-            {!user?.photoURL ? initials : null}
+          <Avatar variant="profile" src={user?.photoURL ?? undefined} alt={user?.displayName || 'Profile picture'} sx={{ width: 36, height: 36, flexShrink: 0 }}>
+            {initials}
           </Avatar>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="userName" noWrap>{user?.displayName || 'GameHub account'}</Typography>
-            <Typography variant="userDetail" noWrap>{user?.email}</Typography>
-          </Box>
+          <Stack direction="column" spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
+            <Typography component="div" variant="userMenuName" color="text.primary" noWrap>{user?.displayName || 'GameHub account'}</Typography>
+            <Typography component="div" variant="caption" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{user?.email || 'No email associated'}</Typography>
+          </Stack>
         </Box>
-        <Divider sx={{ my: 1, mx: 1.5 }} />
-        <MenuItem variant="menuAction" onClick={() => { setMenuEl(null); void logout(); }} sx={{ mx: 0.5, my: 0.5, minHeight: 44 }}>
-          <ListItemIcon sx={{ minWidth: 36 }}><LogOut size={18} /></ListItemIcon>
-          <ListItemText primary="Sign out" slotProps={{ primary: { fontSize: 14, fontWeight: 600 } }} />
+        <Divider sx={{ my: 1, mx: 2 }} />
+        <MenuItem variant="destructiveAction" onClick={() => { setMenuEl(null); void logout(); }}>
+          <ListItemIcon><LogOut size={20} /></ListItemIcon>
+          <ListItemText primary="Sign out" />
         </MenuItem>
       </Menu>
     </AppBar>

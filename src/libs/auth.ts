@@ -21,11 +21,12 @@ export interface GameHubUser {
 }
 
 function toGameHubUser(user: User): GameHubUser {
+  const googleProfilePhoto = user.providerData.find((provider) => provider.providerId === 'google.com')?.photoURL;
   return {
     uid: user.uid,
     displayName: user.displayName ?? (user.email?.split('@')[0] ?? 'Player'),
     email: user.email ?? '',
-    photoURL: user.photoURL,
+    photoURL: user.photoURL || googleProfilePhoto,
   };
 }
 

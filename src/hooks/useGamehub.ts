@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient, type UseQueryOptions } from '@ta
 import { accountsLib } from '@/libs/accounts';
 import { gamesLib } from '@/libs/games';
 import { providersLib } from '@/libs/providers';
-import type { Account, AccountFormData, Game, Provider, ProviderFormData } from '@/domain/types';
+import type { Account, AccountFormData, Game, GameFormData, Provider, ProviderFormData } from '@/domain/types';
 
 export const queryKeys = {
   accounts: (uid: string) => ['accounts', uid] as const,
@@ -47,7 +47,15 @@ export function useDeleteAccount(uid: string) {
 export function useCreateGame(uid: string, accountId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ title, imageFile }: { title: string; imageFile: File | null }) => gamesLib.create(uid, accountId, title, imageFile),
+    mutationFn: ({ form, imageFile }: { form: GameFormData; imageFile: File | null }) => gamesLib.create(uid, accountId, form, imageFile),
+    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.accounts(uid) }),
+  });
+}
+
+export function useUpdateGame(uid: string, accountId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ gameId, form }: { gameId: string; form: Partial<GameFormData> }) => gamesLib.update(uid, accountId, gameId, form),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.accounts(uid) }),
   });
 }

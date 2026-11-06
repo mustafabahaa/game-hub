@@ -1,11 +1,11 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Avatar, Box, Button, Chip, CircularProgress, Divider, IconButton, Paper, Stack, TextField, Typography,
+  Avatar, Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, MenuItem, Paper, Select, Stack, TextField, Typography,
 } from '@monochrome-ui/design-system';
 import { ArrowLeftIcon as ArrowLeft, CalendarClockIcon as CalendarClock, CheckCircleIcon as Check, ContentCopyIcon as Copy, InfinityIcon, KeyIcon as KeyRound, EmailIcon as Mail, PencilIcon as Pencil, AddIcon as Plus, ShieldCheckIcon as ShieldCheck, DeleteOutlineIcon as Trash2, ImportIcon as Upload } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
-import { useAccounts, useCreateGame, useDeleteAccount, useDeleteGame } from '@/hooks/useGamehub';
+import { useAccounts, useCreateGame, useDeleteAccount, useDeleteGame, useProviders, useUpdateGame } from '@/hooks/useGamehub';
 import { AccountModal } from '@/components/AccountModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { getLifecycleLabel, isAccountExpired } from '@/domain/lifecycle';
@@ -21,16 +21,21 @@ function AccountDetailContent({ id }: { id?: string }) {
   const { user } = useAppContext();
   const uid = user?.uid;
   const { data: accounts = [], isLoading: accountsLoading } = useAccounts(uid);
+  const { data: providers = [] } = useProviders(uid);
   const account = useMemo(() => accounts.find((item) => item.id === id), [accounts, id]);
   const record = account;
   const createGame = useCreateGame(uid ?? '', record?.id ?? '');
+  const updateGame = useUpdateGame(uid ?? '', record?.id ?? '');
   const deleteGame = useDeleteGame(uid ?? '', record?.id ?? '');
   const deleteAccount = useDeleteAccount(uid ?? '');
   const [editOpen, setEditOpen] = useState(false);
   const [shownSecrets, setShownSecrets] = useState<Record<string, boolean>>({});
   const [copied, setCopied] = useState<string | null>(null);
   const [gameTitle, setGameTitle] = useState('');
+  const [newGameProviderId, setNewGameProviderId] = useState('');
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [gameDialogOpen, setGameDialogOpen] = useState(false);
+  const [gameToEdit, setGameToEdit] = useState<Game | undefined>();
   const [gameToDelete, setGameToDelete] = useState<Game | undefined>();
   const [confirmAccountDelete, setConfirmAccountDelete] = useState(false);
   const coverInput = useRef<HTMLInputElement>(null);
@@ -46,10 +51,29 @@ function AccountDetailContent({ id }: { id?: string }) {
   const expired = isAccountExpired(record);
   const statusLabel = getLifecycleLabel(record);
 
-  const addGame = async () => {
+  const openAddGame = () => {
+    setGameToEdit(undefined);
+    setGameTitle('');
+    setNewGameProviderId('');
+    setCoverFile(null);
+    setGameDialogOpen(true);
+  };
+  const openEditGame = (game: Game) => {
+    setGameToEdit(game);
+    setGameTitle(game.title);
+    setNewGameProviderId(game.providerId ?? '');
+    setCoverFile(null);
+    setGameDialogOpen(true);
+  };
+  const saveGame = async () => {
     if (!gameTitle.trim()) return;
-    await createGame.mutateAsync({ title: gameTitle.trim(), imageFile: coverFile });
-    setGameTitle(''); setCoverFile(null);
+    if (gameToEdit) {
+      await updateGame.mutateAsync({ gameId: gameToEdit.id, form: { title: gameTitle.trim(), providerId: newGameProviderId || null } });
+    } else {
+      await createGame.mutateAsync({ form: { title: gameTitle.trim(), providerId: newGameProviderId || null }, imageFile: coverFile });
+    }
+    setGameTitle(''); setNewGameProviderId(''); setCoverFile(null);
+    setGameDialogOpen(false); setGameToEdit(undefined);
     if (coverInput.current) coverInput.current.value = '';
   };
   const handleDeleteAccount = async () => {
@@ -91,24 +115,42 @@ function AccountDetailContent({ id }: { id?: string }) {
 
         <Section title={`Games in this account · ${games.length}`} description="Games and covers linked to these credentials.">
           {games.length ? <Stack divider={<Divider />}>
-            {games.map((game) => <GameRow key={game.id} game={game} onDelete={() => setGameToDelete(game)} />)}
+            {games.map((game) => <GameRow key={game.id} game={game} providerName={providers.find((provider) => provider.id === game.providerId)?.name} onEdit={() => openEditGame(game)} onDelete={() => setGameToDelete(game)} />)}
           </Stack> : <Typography variant="body2" color="text.secondary" sx={{ py: 1.5 }}>No games linked yet.</Typography>}
-          <Stack spacing={1} sx={{ mt: 2.5 }}>
-            <input ref={coverInput} type="file" accept="image/*" hidden onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)} />
-            <TextField size="small" fullWidth value={gameTitle} onChange={(event) => setGameTitle(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter') void addGame(); }} placeholder="Game title" slotProps={{ htmlInput: { 'aria-label': 'Game title' } }} />
-            <Stack direction="row" alignItems="center" justifyContent="space-between" gap={1}>
-              <Button variant="quietAction" size="small" onClick={() => coverInput.current?.click()} startIcon={<Upload size={15} />} sx={{ minWidth: 0, px: 0, overflow: 'hidden' }}>
-                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: 180, sm: 300 } }}>{coverFile?.name ?? 'Add cover image'}</Box>
-              </Button>
-              <Button variant="contained" onClick={() => void addGame()} disabled={!gameTitle.trim()} loading={createGame.isPending} startIcon={<Plus size={17} />} sx={{ minHeight: 42, flexShrink: 0, px: 2.25 }}>Add game</Button>
-            </Stack>
-          </Stack>
+          <Button variant="outlined" fullWidth startIcon={<Plus size={16} />} onClick={openAddGame} sx={{ mt: 2 }}>Add a game</Button>
         </Section>
       </Box>
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 2.5 }}><Button color="error" variant="text" startIcon={<Trash2 size={16} />} onClick={() => setConfirmAccountDelete(true)}>Delete account</Button></Box>
 
       {account && <AccountModal open={editOpen} account={account} onClose={() => setEditOpen(false)} />}
+      <Dialog open={gameDialogOpen} onClose={() => setGameDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{gameToEdit ? 'Edit game' : 'Add a game'}</DialogTitle>
+        <DialogContent>
+          <Stack direction="column" spacing={2} sx={{ mt: 1 }}>
+            <TextField label="Game title" fullWidth required value={gameTitle} onChange={(event) => setGameTitle(event.target.value)} />
+            <Stack direction="column" spacing={0.5}>
+              <Typography variant="metadataLabel" color="text.secondary">Provider</Typography>
+              <Select size="small" fullWidth displayEmpty value={newGameProviderId} onChange={(event) => setNewGameProviderId(event.target.value)} aria-label="Provider for game">
+                <MenuItem value="">No provider</MenuItem>
+                {providers.map((provider) => <MenuItem key={provider.id} value={provider.id}>{provider.name}</MenuItem>)}
+              </Select>
+            </Stack>
+            {!gameToEdit && <>
+              <input ref={coverInput} type="file" accept="image/*" hidden onChange={(event) => setCoverFile(event.target.files?.[0] ?? null)} />
+              <Button variant="quietAction" size="small" onClick={() => coverInput.current?.click()} startIcon={<Upload size={15} />} sx={{ alignSelf: 'flex-start', minWidth: 0, px: 0, overflow: 'hidden' }}>
+                <Box component="span" sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: { xs: 180, sm: 300 } }}>{coverFile?.name ?? 'Add cover image'}</Box>
+              </Button>
+            </>}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setGameDialogOpen(false)}>Cancel</Button>
+          <Button variant="contained" onClick={() => void saveGame()} disabled={!gameTitle.trim()} loading={createGame.isPending || updateGame.isPending} startIcon={gameToEdit ? <Pencil size={16} /> : <Plus size={16} />}>
+            {gameToEdit ? 'Save changes' : 'Add game'}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <ConfirmDialog open={confirmAccountDelete} title="Delete account?" message="This permanently removes the account and all its game covers." onConfirm={() => void handleDeleteAccount()} onClose={() => setConfirmAccountDelete(false)} />
       <ConfirmDialog open={Boolean(gameToDelete)} title="Remove game?" message="This removes the game and its cover from this account." onConfirm={() => { if (gameToDelete) deleteGame.mutate(gameToDelete); setGameToDelete(undefined); }} onClose={() => setGameToDelete(undefined)} />
     </Box>
@@ -121,8 +163,10 @@ function HeaderChip({ label, icon, expired }: { label: string; icon?: React.Reac
 
 function Section({ title, description, children, sx }: { title: string; description: string; children: React.ReactNode; sx?: object }) {
   return <Box component="section" sx={{ minWidth: 0, py: { xs: 0, lg: 1 }, ...sx }}>
-    <Typography variant="sectionHeading">{title}</Typography>
-    <Typography variant="sectionDescription" color="text.secondary" sx={{ mt: .5, mb: 1.5 }}>{description}</Typography>
+    <Stack direction="column" spacing={0.5} sx={{ mb: 1.5 }}>
+      <Typography variant="sectionHeading">{title}</Typography>
+      <Typography variant="sectionDescription" color="text.secondary">{description}</Typography>
+    </Stack>
     {children}
   </Box>;
 }
@@ -131,23 +175,26 @@ function Credential({ icon, label, value, secret, shown, copied, onReveal, onCop
   const hasValue = Boolean(value);
   return <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 1.5, minWidth: 0 }}>
     <Typography component="span" color="text.secondary" sx={{ display: 'flex', flexShrink: 0 }}>{icon}</Typography>
-    <Box sx={{ flex: 1, minWidth: 0 }}>
+    <Stack direction="column" spacing={0.25} sx={{ flex: 1, minWidth: 0 }}>
       <Typography variant="metadataLabel" color="text.secondary">{label}</Typography>
       <Typography variant="monospaceValue">{value ? secret && !shown ? '••••••••' : value : 'Not set'}</Typography>
-    </Box>
+    </Stack>
     {secret && hasValue && <Button size="small" onClick={onReveal} sx={{ minWidth: 0, px: 1, flexShrink: 0 }}>{shown ? 'Hide' : 'Reveal'}</Button>}
     <IconButton size="small" aria-label={`Copy ${label}`} disabled={!hasValue} onClick={onCopy} sx={{ flexShrink: 0 }}>{copied ? <Check size={16} /> : <Copy size={16} />}</IconButton>
   </Stack>;
 }
 
-function GameRow({ game, onDelete }: { game: Game; onDelete: () => void }) {
-  return <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 1.5, minWidth: 0 }}>
+function GameRow({ game, providerName, onEdit, onDelete }: { game: Game; providerName?: string; onEdit: () => void; onDelete: () => void }) {
+  return <Stack direction="row" alignItems="flex-start" spacing={1.5} sx={{ py: 1.75, minWidth: 0 }}>
     {game.imageUrl ? <Paper component="img" variant="mediaThumbnail" src={game.imageUrl} alt="" sx={{ width: 52, height: 72, flexShrink: 0 }} /> : <Avatar variant="mediaPlaceholder"><Plus size={18} /></Avatar>}
-    <Box sx={{ flex: 1, minWidth: 0 }}>
+    <Stack direction="column" spacing={0.5} sx={{ flex: 1, minWidth: 0 }}>
       <Typography variant="itemTitle" title={game.title}>{game.title}</Typography>
-      <Typography variant="caption" color="text.secondary">Linked to this account</Typography>
-    </Box>
-    <Button aria-label={`Remove ${game.title}`} size="small" color="error" variant="text" startIcon={<Trash2 size={15} />} onClick={onDelete} sx={{ flexShrink: 0 }}>Remove</Button>
+      <Typography variant="caption" color="text.secondary">Provider · {providerName ?? 'Not assigned'}</Typography>
+    </Stack>
+    <Stack direction="row" spacing={0.25} sx={{ flexShrink: 0, mt: -0.5 }}>
+      <IconButton aria-label={`Edit ${game.title}`} size="small" variant="quietAction" onClick={onEdit}><Pencil size={15} /></IconButton>
+      <IconButton aria-label={`Remove ${game.title}`} size="small" color="error" variant="quietAction" onClick={onDelete}><Trash2 size={16} /></IconButton>
+    </Stack>
   </Stack>;
 }
 
