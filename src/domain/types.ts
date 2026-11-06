@@ -61,6 +61,7 @@ export interface Provider {
   name: string;
   website?: string | null;
   whatsapp?: string | null;
+  messenger?: string | null;
   facebook?: string | null;
   instagram?: string | null;
   notes?: string | null;
@@ -73,6 +74,7 @@ export interface ProviderFormData {
   name: string;
   website?: string | null;
   whatsapp?: string | null;
+  messenger?: string | null;
   facebook?: string | null;
   instagram?: string | null;
   notes?: string | null;

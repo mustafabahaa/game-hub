@@ -1,18 +1,26 @@
 import { useMemo, useState } from 'react';
 import {
-  Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Card, CardActionArea, Paper,
-  CardContent, Pagination, Skeleton, PageHeader,
+  Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Divider, CardActionArea,
+  Pagination, Skeleton, PageHeader, Chip, IconButton, Tooltip,
 } from '@monochrome-ui/design-system';
-import { SearchIcon as Search, AddIcon as Plus, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
+import { SearchIcon as Search, AddIcon as Plus, GamepadIcon as Gamepad2, GlobeIcon, WhatsAppIcon, MessengerIcon, InstagramIcon, FacebookIcon } from '@/components/AppIcon';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useProviders } from '@/hooks/useGamehub';
 import { ProviderModal } from '@/components/ProviderModal';
 import { EmptyState } from '@/components/EmptyState';
 import type { Provider } from '@/domain/types';
+import { getProviderContactHref, type ProviderContactChannel } from '@/libs/providerLinks';
 
 const PAGE_SIZE = 12;
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
+const CONTACT_CHANNELS: { channel: ProviderContactChannel; label: string }[] = [
+  { channel: 'whatsapp', label: 'WhatsApp' },
+  { channel: 'messenger', label: 'Messenger' },
+  { channel: 'instagram', label: 'Instagram' },
+  { channel: 'facebook', label: 'Facebook' },
+  { channel: 'website', label: 'Website' },
+];
 
 export function ProvidersPage() {
   const navigate = useNavigate();
@@ -20,15 +28,15 @@ export function ProvidersPage() {
   const { data: providers, isLoading } = useProviders(user?.uid);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [channelFilter, setChannelFilter] = useState<ProviderContactChannel | 'all'>('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [editProvider, setEditProvider] = useState<Provider | undefined>();
 
   const filtered = useMemo(() => {
     const list = providers ?? [];
-    if (!search.trim()) return list;
-    const q = search.toLowerCase();
-    return list.filter((p) => p.name.toLowerCase().includes(q));
-  }, [providers, search]);
+    const q = search.trim().toLowerCase();
+    return list.filter((provider) => (!q || provider.name.toLowerCase().includes(q)) && (channelFilter === 'all' || getProviderContactHref(provider, channelFilter) !== null));
+  }, [providers, search, channelFilter]);
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const visibleProviders = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
@@ -40,18 +48,26 @@ export function ProvidersPage() {
         action={<Button variant="contained" startIcon={<Plus size={16} />} onClick={() => { setEditProvider(undefined); setModalOpen(true); }}>Add Provider</Button>}
       />
 
+      <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} gap={1.5} sx={{ mt: { xs: 2, md: 3 }, mb: 2.5 }}>
       <TextField
-        fullWidth value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+        value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         placeholder="Search providers…"
-        sx={{ mb: 2.5 }}
+        sx={{ width: { xs: '100%', md: 360 }, flexShrink: 0 }}
         slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
       />
+      <Stack direction="row" gap={0.75} useFlexGap flexWrap="wrap" role="group" aria-label="Filter providers by contact method">
+        <Chip label="All" onClick={() => { setChannelFilter('all'); setPage(1); }} variant={channelFilter === 'all' ? 'filterSelected' : 'filter'} />
+        {CONTACT_CHANNELS.filter(({ channel }) => providers?.some((provider) => getProviderContactHref(provider, channel))).map(({ channel, label }) => (
+          <Chip key={channel} label={label} onClick={() => { setChannelFilter(channel); setPage(1); }} variant={channelFilter === channel ? 'filterSelected' : 'filter'} />
+        ))}
+      </Stack>
+      </Stack>
 
-      {isLoading && <ProviderGrid>{SKELETON_KEYS.map((i) => <ProviderCardSkeleton key={i} />)}</ProviderGrid>}
+      {isLoading && <ProviderGrid>{SKELETON_KEYS.map((i) => <ProviderRowSkeleton key={i} />)}</ProviderGrid>}
 
       {!isLoading && filtered.length === 0 && (
         providers?.length ? (
-          <EmptyState icon={<Search size={21} />} title="No matching providers" description="Try a different search." sx={{ py: 3 }} />
+          <EmptyState icon={<Search size={21} />} title="No matching providers" description="Try a different search or contact filter." sx={{ py: 3 }} />
         ) : (
           <EmptyState
             icon={<Gamepad2 size={21} />}
@@ -66,7 +82,7 @@ export function ProvidersPage() {
       {!isLoading && filtered.length > 0 && <>
         <ProviderGrid>
         {visibleProviders.map((p) => (
-          <ProviderCard key={p.id} provider={p} onView={() => navigate(`/providers/${p.id}`)} />
+          <ProviderRow key={p.id} provider={p} onView={() => navigate(`/providers/${p.id}`)} />
         ))}
         </ProviderGrid>
         {pageCount > 1 && <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={1.5} sx={{ mt: 3 }}>
@@ -81,7 +97,7 @@ export function ProvidersPage() {
 }
 
 function ProviderGrid({ children }: { children: React.ReactNode }) {
-  return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, minmax(0, 1fr))', lg: 'repeat(3, minmax(0, 1fr))', xl: 'repeat(4, minmax(0, 1fr))' }, gap: { xs: 2, sm: 2.5 } }}>{children}</Box>;
+  return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: { xs: 1.5, sm: 2 } }}>{children}</Box>;
 }
 
 interface ProviderCardProps {
@@ -89,40 +105,49 @@ interface ProviderCardProps {
   onView: () => void;
 }
 
-function ProviderCard({ provider, onView }: ProviderCardProps) {
+function ProviderRow({ provider, onView }: ProviderCardProps) {
+  const contactItems = CONTACT_CHANNELS.flatMap(({ channel, label }) => {
+    const href = getProviderContactHref(provider, channel);
+    if (!href) return [];
+    const Icon = channel === 'website' ? GlobeIcon : channel === 'whatsapp' ? WhatsAppIcon : channel === 'messenger' ? MessengerIcon : channel === 'instagram' ? InstagramIcon : FacebookIcon;
+    return [{ channel, label, href, Icon }];
+  });
   return (
-    <Card sx={{ overflow: 'hidden', height: '100%' }}>
-      <CardActionArea onClick={onView} sx={{ display: 'flex', height: '100%', alignItems: 'center', gap: 1.5, p: 1.5 }}>
-        <Paper variant="mediaFrame" sx={{ width: 76, height: 76, flex: '0 0 auto', p: 1 }}>
-          {provider.photoUrl
-            ? <Paper component="img" variant="mediaSurface" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ width: 60, height: 60 }} />
-            : <Avatar variant="mediaFallbackCompact" sx={{ width: 60, height: 60 }}>{provider.name[0]?.toUpperCase()}</Avatar>}
-        </Paper>
-        <CardContent sx={{ minWidth: 0, flex: 1, p: 0, '&:last-child': { pb: 0 } }}>
-          <Typography variant="itemTitle" noWrap>{provider.name}</Typography>
-          <Typography variant="body2" color="text.secondary" noWrap>
-            {provider.website ? provider.website.replace(/^https?:\/\//, '') : 'No website listed'}
-          </Typography>
-          {provider.notes && <Typography variant="bodyNote" color="text.secondary" noWrap>{provider.notes}</Typography>}
-        </CardContent>
-      </CardActionArea>
-    </Card>
+    <Box component="article" sx={{ minWidth: 0 }}>
+      <Stack direction="row" alignItems="center" gap={1.5} sx={{ minWidth: 0, py: 1.5 }}>
+        <Avatar
+          src={provider.photoUrl || undefined}
+          alt={`${provider.name} logo`}
+          variant="mediaFallbackCompact"
+          sx={{ width: 48, height: 48, flex: '0 0 auto' }}
+        >{provider.name[0]?.toUpperCase()}</Avatar>
+        <CardActionArea onClick={onView} sx={{ minWidth: 0, flex: 1, textAlign: 'left' }}>
+          <Stack>
+            <Typography variant="itemTitle" noWrap>{provider.name}</Typography>
+            <Typography variant="body2" color="text.secondary" noWrap>{contactItems.length ? `${contactItems.length} contact options` : 'No contact details'}</Typography>
+          </Stack>
+        </CardActionArea>
+        {contactItems.length > 0 && <Stack direction="row" gap={0.5} sx={{ flexShrink: 0 }}>
+          {contactItems.map(({ channel, label, href, Icon }) => <Tooltip key={channel} title={label}>
+            <IconButton component="a" href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label} for ${provider.name}`} size="small" variant="quietAction" sx={{ width: 36, height: 36 }} onClick={(event) => event.stopPropagation()}>
+              <Icon size={21} />
+            </IconButton>
+          </Tooltip>)}
+        </Stack>}
+      </Stack>
+      <Divider />
+    </Box>
   );
 }
 
-function ProviderCardSkeleton() {
+function ProviderRowSkeleton() {
   return (
-    <Card aria-hidden="true" sx={{ overflow: 'hidden', height: '100%' }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5 }}>
-        <Paper variant="mediaFrame" sx={{ width: 76, height: 76, flex: '0 0 auto', p: 1 }}>
-          <Skeleton variant="rounded" animation="wave" width={60} height={60} />
-        </Paper>
-        <CardContent sx={{ minWidth: 0, flex: 1, p: 0, '&:last-child': { pb: 0 } }}>
-          <Skeleton variant="text" animation="wave" width="65%" height={28} />
-          <Skeleton variant="text" animation="wave" width="48%" height={20} />
-          <Skeleton variant="text" animation="wave" width="86%" height={20} />
-        </CardContent>
+    <Stack direction="row" alignItems="center" gap={1.5} sx={{ py: 1.5 }} aria-hidden="true">
+      <Skeleton variant="circular" animation="wave" width={48} height={48} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Skeleton variant="text" animation="wave" width="65%" height={28} />
+        <Skeleton variant="text" animation="wave" width="48%" height={20} />
       </Box>
-    </Card>
+    </Stack>
   );
 }

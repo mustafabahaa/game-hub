@@ -13,7 +13,7 @@ import {
   InputAdornment,
   Divider,
 } from '@monochrome-ui/design-system';
-import { ShopIcon as Store, ImportIcon as Upload, MessageCircleIcon as MessageCircle, GlobeIcon as Globe, CameraIcon as Camera, LinkIcon } from '@/components/AppIcon';
+import { ShopIcon as Store, ImportIcon as Upload, MessageCircleIcon as MessageCircle, MessengerIcon, GlobeIcon as Globe, CameraIcon as Camera, LinkIcon } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useCreateProvider, useUpdateProvider } from '@/hooks/useGamehub';
 import type { Provider, ProviderFormData } from '@/domain/types';
@@ -40,6 +40,7 @@ function ProviderModalContent({ provider, onClose }: Omit<ProviderModalProps, 'o
     name: provider.name,
     website: provider.website ?? '',
     whatsapp: provider.whatsapp ?? '',
+    messenger: provider.messenger ?? '',
     facebook: provider.facebook ?? '',
     instagram: provider.instagram ?? '',
     notes: provider.notes ?? '',
@@ -101,6 +102,7 @@ function ProviderModalContent({ provider, onClose }: Omit<ProviderModalProps, 'o
                 <TextField label="Website" value={form.website ?? ''} onChange={(e) => setForm({ ...form, website: e.target.value })} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start"><Globe size={16} /></InputAdornment> } }} />
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 1.5 }}>
                   <TextField label="WhatsApp" value={form.whatsapp ?? ''} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start"><MessageCircle size={16} /></InputAdornment> } }} />
+                  <TextField label="Messenger URL" value={form.messenger ?? ''} onChange={(e) => setForm({ ...form, messenger: e.target.value })} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start"><MessengerIcon size={16} /></InputAdornment> } }} />
                   <TextField label="Facebook" value={form.facebook ?? ''} onChange={(e) => setForm({ ...form, facebook: e.target.value })} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start"><LinkIcon size={16} /></InputAdornment> } }} />
                   <TextField label="Instagram" value={form.instagram ?? ''} onChange={(e) => setForm({ ...form, instagram: e.target.value })} fullWidth slotProps={{ input: { startAdornment: <InputAdornment position="start"><Camera size={16} /></InputAdornment> } }} />
                 </Box>
@@ -126,5 +128,5 @@ function ProviderModalContent({ provider, onClose }: Omit<ProviderModalProps, 'o
 }
 
 function emptyForm(): ProviderFormData {
-  return { name: '', website: '', whatsapp: '', facebook: '', instagram: '', notes: '', photo: null };
+  return { name: '', website: '', whatsapp: '', messenger: '', facebook: '', instagram: '', notes: '', photo: null };
 }

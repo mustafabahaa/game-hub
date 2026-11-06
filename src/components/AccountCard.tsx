@@ -1,8 +1,11 @@
 import { useState } from 'react';
-import { Card, CardContent, CardMedia, Box, Paper, Typography, Chip, Button, Stack, IconButton, Collapse, Skeleton, Menu, MenuItem, ListItemText, DestructiveListIcon } from '@monochrome-ui/design-system';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent, CardMedia, Box, Paper, Typography, Chip, Button, Stack, IconButton, Collapse, Skeleton, Menu, MenuItem, ListItemText, DestructiveListIcon, Avatar, Tooltip } from '@monochrome-ui/design-system';
 import { ChevronDownIcon as ChevronDown, KeyIcon as KeyRound, ShieldCheckIcon as ShieldCheck, CalendarClockIcon as CalendarClock, InfinityIcon, EmailIcon as Mail, VisibilityIcon as Eye, VisibilityOffIcon as EyeOff, StarIcon as Star, MoreVerticalIcon as MoreVertical, DeleteOutlineIcon as Trash2 } from '@/components/AppIcon';
 import type { Account } from '@/domain/types';
 import { getLifecycleLabel, isAccountExpired } from '@/domain/lifecycle';
+import { useAppContext } from '@/hooks/useAppContext';
+import { useProviders } from '@/hooks/useGamehub';
 
 /**
  * AccountCard — follows the design-craft card anatomy.
@@ -22,6 +25,9 @@ interface AccountCardProps {
 }
 
 export function AccountCard({ account, onDelete }: AccountCardProps) {
+  const navigate = useNavigate();
+  const { user } = useAppContext();
+  const { data: providers = [] } = useProviders(user?.uid);
   const [expanded, setExpanded] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
@@ -29,6 +35,7 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
 
   const games = account.games ?? [];
   const heroGame = games[0];
+  const heroProvider = providers.find((provider) => provider.id === heroGame?.providerId);
   const expired = isAccountExpired(account);
 
   return (
@@ -60,15 +67,28 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
           )}
         </Stack>
 
-        {onDelete && (
-          <IconButton
+        {(heroProvider || onDelete) && <Stack direction="row" spacing={0.75} sx={{ position: 'absolute', top: 8, right: 8 }}>
+          {heroProvider && <Tooltip title={`${heroProvider.name} provider`}>
+            <IconButton
+              aria-label={`Open ${heroProvider.name} provider`}
+              onClick={(event) => { event.stopPropagation(); navigate(`/providers/${heroProvider.id}`); }}
+              variant="overlayAction"
+              sx={{ position: 'static' }}
+            >
+              {heroProvider.photoUrl
+                ? <Avatar src={heroProvider.photoUrl} alt="" sx={{ width: 24, height: 24 }} />
+                : <Avatar variant="mediaFallbackCompact" sx={{ width: 24, height: 24 }}>{heroProvider.name[0]?.toUpperCase()}</Avatar>}
+            </IconButton>
+          </Tooltip>}
+          {onDelete && <IconButton
             aria-label={`Actions for ${account.accountName}`}
             onClick={(event) => { event.stopPropagation(); setMenuAnchor(event.currentTarget); }}
             variant="overlayAction"
+            sx={{ position: 'static' }}
           >
             <MoreVertical size={18} />
-          </IconButton>
-        )}
+          </IconButton>}
+        </Stack>}
 
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)} onClick={(event) => event.stopPropagation()}>
           <MenuItem onClick={() => { setMenuAnchor(null); onDelete?.(account); }} color="error">

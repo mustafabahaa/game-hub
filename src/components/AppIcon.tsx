@@ -33,6 +33,7 @@ import {
   ExportSquare,
   Eye,
   EyeSlash,
+  Facebook,
   Filter,
   Game,
   Global,
@@ -40,12 +41,14 @@ import {
   HambergerMenu,
   Import,
   InfoCircle,
+  Instagram,
   Key,
   Link1,
   Logout,
   Minus,
   Message2,
   MessageCircle,
+  Messenger,
   MagicStar,
   Sms,
   ShieldTick,
@@ -70,6 +73,7 @@ import {
   Timer1,
   Trash,
   Wallet,
+  Whatsapp,
 } from 'iconsax-react';
 
 type IconsaxVariant = 'Linear' | 'Outline' | 'Broken' | 'Bold' | 'Bulk' | 'TwoTone';
@@ -194,6 +198,7 @@ export const ImportIcon = createAppIcon(Import);
 export const CheckSimpleIcon = createAppIcon(TickCircle);
 export const ChevronDownIcon = createAppIcon(ArrowDown2);
 export const ExternalLinkIcon = createAppIcon(ExportSquare);
+export const FacebookIcon = createAppIcon(Facebook);
 export const GamepadIcon = createAppIcon(Game);
 export const GlobeIcon = createAppIcon(Global);
 export const InfinityIcon = forwardRef<SVGSVGElement, AppIconProps>(function InfinityIcon({ size = 24, ...props }, ref) {
@@ -205,11 +210,14 @@ export const InfinityIcon = forwardRef<SVGSVGElement, AppIconProps>(function Inf
 });
 export const LinkIcon = createAppIcon(Link1);
 export const MessageCircleIcon = createAppIcon(MessageCircle);
+export const MessengerIcon = createAppIcon(Messenger);
 export const PencilIcon = createAppIcon(Edit2);
 export const SendIcon = createAppIcon(Send2);
 export const ShieldCheckIcon = createAppIcon(ShieldTick);
 export const ShopIcon = createAppIcon(Shop);
 export const SparkleIcon = createAppIcon(MagicStar);
 export const StarIcon = createAppIcon(Star1);
+export const InstagramIcon = createAppIcon(Instagram);
+export const WhatsAppIcon = createAppIcon(Whatsapp);
 export const WarningIcon = createAppIcon(Danger);
  

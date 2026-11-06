@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Avatar, Box, Button, CircularProgress, Divider, Paper, Stack, Typography } from '@monochrome-ui/design-system';
-import { ArrowLeftIcon as ArrowLeft, ExternalLinkIcon as ExternalLink, LinkIcon, MessageCircleIcon as MessageCircle, DeleteOutlineIcon as Trash2 } from '@/components/AppIcon';
+import { ArrowLeftIcon as ArrowLeft, EditIcon as Edit, ExternalLinkIcon as ExternalLink, LinkIcon, MessageCircleIcon as MessageCircle, DeleteOutlineIcon as Trash2 } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useDeleteProvider, useProvider } from '@/hooks/useGamehub';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
+import { ProviderModal } from '@/components/ProviderModal';
 
 export function ProviderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +14,7 @@ export function ProviderDetailPage() {
   const { data: provider, isLoading } = useProvider(user?.uid, id);
   const deleteProvider = useDeleteProvider(user?.uid ?? '');
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) return <Box sx={{ display: 'grid', placeItems: 'center', minHeight: '50vh' }}><CircularProgress /></Box>;
 
@@ -37,7 +39,10 @@ export function ProviderDetailPage() {
           <Typography variant="pageHeading">{provider.name}</Typography>
           {provider.website && <Typography variant="body2" color="text.secondary" sx={{ mt: .5 }}>{provider.website.replace(/^https?:\/\//, '')}</Typography>}
         </Box>
-        {isOwner && <Button color="error" variant="outlined" startIcon={<Trash2 size={17} />} onClick={() => setConfirmDelete(true)}>Delete provider</Button>}
+        {isOwner && <Stack direction="row" spacing={1}>
+          <Button variant="outlined" startIcon={<Edit size={17} />} onClick={() => setEditOpen(true)}>Edit provider</Button>
+          <Button color="error" variant="outlined" startIcon={<Trash2 size={17} />} onClick={() => setConfirmDelete(true)}>Delete provider</Button>
+        </Stack>}
       </Stack>
 
       <Divider />
@@ -59,6 +64,8 @@ export function ProviderDetailPage() {
           <Typography variant="bodyNote" color="text.secondary">{provider.notes}</Typography>
         </Box>
       </>}
+
+      {isOwner && <ProviderModal open={editOpen} provider={provider} onClose={() => setEditOpen(false)} />}
 
       {isOwner && <ConfirmDialog
         open={confirmDelete}
