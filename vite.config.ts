@@ -54,6 +54,22 @@ export default defineConfig({
             if (id.includes('firebase')) {
               return 'firebase-vendor';
             }
+            if (id.includes('/node_modules/react-router/') || id.includes('/node_modules/react-router-dom/')) {
+              return 'router-vendor';
+            }
+            if (
+              id.includes('/node_modules/react-dom/') ||
+              id.includes('/node_modules/react/') ||
+              id.includes('/node_modules/scheduler/')
+            ) {
+              return 'react-vendor';
+            }
+            if (id.includes('/@monochrome-ui/') || id.includes('/iconsax-react/')) {
+              return 'design-system-vendor';
+            }
+            if (id.includes('/notistack/') || id.includes('/@tanstack/')) {
+              return 'state-vendor';
+            }
             if (id.includes('@mui') || id.includes('@emotion')) {
               return 'mui-vendor';
             }
