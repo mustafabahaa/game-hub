@@ -11,7 +11,7 @@ import { ProviderModal } from '@/components/ProviderModal';
 import { EmptyState } from '@/components/EmptyState';
 import type { Provider } from '@/domain/types';
 
-const PAGE_SIZE = 8;
+const PAGE_SIZE = 12;
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
 
 export function ProvidersPage() {
@@ -43,7 +43,7 @@ export function ProvidersPage() {
       <TextField
         fullWidth value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         placeholder="Search providers…"
-        sx={{ mb: 3.5 }}
+        sx={{ mb: 2.5 }}
         slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
       />
 
@@ -92,14 +92,18 @@ interface ProviderCardProps {
 function ProviderCard({ provider, onView }: ProviderCardProps) {
   return (
     <Card sx={{ overflow: 'hidden', height: '100%' }}>
-      <CardActionArea onClick={onView} sx={{ display: 'flex', height: '100%', flexDirection: 'column', alignItems: 'stretch' }}>
-        <Paper variant="mediaFrame" sx={{ height: { xs: 220, sm: 240, lg: 260 }, flex: '0 0 auto' }}>
-          {provider.photoUrl ? <Paper component="img" variant="mediaSurface" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ width: 'auto', height: 'auto', maxWidth: '100%', maxHeight: { xs: 188, sm: 208, lg: 228 }, objectPosition: 'center' }} /> : <Avatar variant="mediaFallbackCompact">{provider.name[0]?.toUpperCase()}</Avatar>}
+      <CardActionArea onClick={onView} sx={{ display: 'flex', height: '100%', alignItems: 'center', gap: 1.5, p: 1.5 }}>
+        <Paper variant="mediaFrame" sx={{ width: 76, height: 76, flex: '0 0 auto', p: 1 }}>
+          {provider.photoUrl
+            ? <Paper component="img" variant="mediaSurface" src={provider.photoUrl} alt={`${provider.name} logo`} sx={{ width: 60, height: 60 }} />
+            : <Avatar variant="mediaFallbackCompact" sx={{ width: 60, height: 60 }}>{provider.name[0]?.toUpperCase()}</Avatar>}
         </Paper>
-        <CardContent sx={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch', flex: 1, gap: .75 }}>
+        <CardContent sx={{ minWidth: 0, flex: 1, p: 0, '&:last-child': { pb: 0 } }}>
           <Typography variant="itemTitle" noWrap>{provider.name}</Typography>
-          {provider.website ? <Typography variant="body2" color="text.secondary" noWrap>{provider.website.replace(/^https?:\/\//, '')}</Typography> : <Typography variant="body2" color="text.secondary">No website listed</Typography>}
-          {provider.notes && <Typography variant="bodyNote" color="text.secondary" sx={{ mt: .5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{provider.notes}</Typography>}
+          <Typography variant="body2" color="text.secondary" noWrap>
+            {provider.website ? provider.website.replace(/^https?:\/\//, '') : 'No website listed'}
+          </Typography>
+          {provider.notes && <Typography variant="bodyNote" color="text.secondary" noWrap>{provider.notes}</Typography>}
         </CardContent>
       </CardActionArea>
     </Card>
@@ -109,14 +113,16 @@ function ProviderCard({ provider, onView }: ProviderCardProps) {
 function ProviderCardSkeleton() {
   return (
     <Card aria-hidden="true" sx={{ overflow: 'hidden', height: '100%' }}>
-      <Paper variant="mediaFrame" sx={{ height: { xs: 220, sm: 240, lg: 260 } }}>
-        <Skeleton variant="rounded" animation="wave" width={92} height={92} />
-      </Paper>
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
-        <Skeleton variant="text" animation="wave" width="65%" height={28} />
-        <Skeleton variant="text" animation="wave" width="48%" height={20} />
-        <Skeleton variant="text" animation="wave" width="86%" height={20} />
-      </CardContent>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, p: 1.5 }}>
+        <Paper variant="mediaFrame" sx={{ width: 76, height: 76, flex: '0 0 auto', p: 1 }}>
+          <Skeleton variant="rounded" animation="wave" width={60} height={60} />
+        </Paper>
+        <CardContent sx={{ minWidth: 0, flex: 1, p: 0, '&:last-child': { pb: 0 } }}>
+          <Skeleton variant="text" animation="wave" width="65%" height={28} />
+          <Skeleton variant="text" animation="wave" width="48%" height={20} />
+          <Skeleton variant="text" animation="wave" width="86%" height={20} />
+        </CardContent>
+      </Box>
     </Card>
   );
 }
