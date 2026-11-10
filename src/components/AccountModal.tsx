@@ -15,11 +15,13 @@ import {
   Switch,
   FormHelperText,
   Divider,
+  IconButton,
 } from '@monochrome-ui/design-system';
-import { GamepadIcon as Gamepad2 } from '@/components/AppIcon';
+import { GamepadIcon as Gamepad2, AddIcon as Plus, DeleteOutlineIcon as Trash } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useCreateAccount, useUpdateAccount } from '@/hooks/useGamehub';
-import type { Account, AccountFormData, AccountType, Platform } from '@/domain/types';
+import type { Account, AccountFormData, AccountInfoField, AccountType, Platform } from '@/domain/types';
+import { cleanAccountInfoFields, getAccountInfoFields, isSensitiveAccountInfoLabel } from '@/domain/accountInfo';
 
 interface AccountModalProps {
   open: boolean;
@@ -43,10 +45,7 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
 
   const [form, setForm] = useState<AccountFormData>(() => account ? {
     accountName: account.accountName,
-    email: account.email,
-    notes: account.notes ?? '',
-    password: account.password ?? '',
-    otpSecret: account.otpSecret ?? '',
+    infoFields: getAccountInfoFields(account),
     providerId: account.providerId ?? '',
     accountType: account.accountType ?? null,
     platform: account.platform,
@@ -58,13 +57,27 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
   const isEdit = Boolean(account);
   const saving = createAccount.isPending || updateAccount.isPending;
 
+  const updateInfoField = (index: number, changes: Partial<AccountInfoField>) => {
+    setForm((previous) => ({
+      ...previous,
+      infoFields: (previous.infoFields ?? []).map((field, fieldIndex) => fieldIndex === index
+        ? { ...field, ...changes, secret: changes.label !== undefined && isSensitiveAccountInfoLabel(changes.label) ? true : changes.secret ?? field.secret }
+        : field),
+    }));
+  };
+  const addInfoField = () => setForm((previous) => ({
+    ...previous,
+    infoFields: [...(previous.infoFields ?? []), { id: crypto.randomUUID(), label: '', value: '' }],
+  }));
+  const removeInfoField = (index: number) => setForm((previous) => ({
+    ...previous,
+    infoFields: (previous.infoFields ?? []).flatMap((field, fieldIndex) => fieldIndex === index ? [] : [field]),
+  }));
+
   const handleSubmit = async () => {
     const payload: AccountFormData = {
       ...form,
-      email: form.email?.trim() || null,
-      notes: form.notes?.trim() || null,
-      password: form.password || null,
-      otpSecret: form.otpSecret || null,
+      infoFields: cleanAccountInfoFields(form.infoFields ?? []),
       providerId: form.providerId || null,
       expiresOn: form.lifecycleType === 'expires_on' ? form.expiresOn || null : null,
     };
@@ -95,34 +108,29 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
               fullWidth
               required
             />
-            <TextField
-              label="Notes"
-              value={form.notes ?? ''}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              fullWidth
-              multiline
-              minRows={2}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              value={form.email ?? ''}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="Password"
-              type="text"
-              value={form.password ?? ''}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              fullWidth
-            />
-            <TextField
-              label="OTP Secret"
-              value={form.otpSecret ?? ''}
-              onChange={(e) => setForm({ ...form, otpSecret: e.target.value })}
-              fullWidth
-            />
+            <Box>
+              <Typography variant="overline" sx={{ display: 'block', mb: 1 }}>Account info</Typography>
+              <Stack spacing={1.5}>
+                {(form.infoFields ?? []).map((field, index) => (
+                  <Stack key={field.id} direction={{ xs: 'column', sm: 'row' }} spacing={1} alignItems={{ sm: 'flex-start' }}>
+                    <TextField label="Label" value={field.label} onChange={(event) => updateInfoField(index, { label: event.target.value })} fullWidth />
+                    <TextField label="Value" type={field.secret ? 'password' : 'text'} multiline={/note|description/i.test(field.label)}
+                      minRows={/note|description/i.test(field.label) ? 2 : undefined} value={field.value}
+                      onChange={(event) => updateInfoField(index, { value: event.target.value })} fullWidth />
+                    <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ flexShrink: 0 }}>
+                      <Switch checked={Boolean(field.secret)} onChange={(event) => updateInfoField(index, { secret: event.target.checked })}
+                        slotProps={{ input: { 'aria-label': `Mark ${field.label || 'field'} as sensitive` } }} />
+                      <IconButton aria-label={`Remove ${field.label || 'info field'}`} size="small" variant="quietAction" onClick={() => removeInfoField(index)}>
+                        <Trash size={17} />
+                      </IconButton>
+                    </Stack>
+                  </Stack>
+                ))}
+                <Button size="small" variant="outlined" startIcon={<Plus size={15} />} onClick={addInfoField} sx={{ alignSelf: 'flex-start' }}>
+                  Add info
+                </Button>
+              </Stack>
+            </Box>
 
             <Divider />
 
@@ -212,7 +220,7 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
             <Button
               onClick={handleSubmit}
               variant="contained"
-              disabled={saving || !form.accountName.trim() || Boolean(form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
+              disabled={saving || !form.accountName.trim() || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
               loading={saving}
               sx={{ width: { xs: '100%', sm: 'auto' }, whiteSpace: 'nowrap' }}
             >
@@ -228,10 +236,7 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
 function emptyForm(): AccountFormData {
   return {
     accountName: '',
-    email: '',
-    notes: '',
-    password: '',
-    otpSecret: '',
+    infoFields: [],
     providerId: '',
     accountType: null,
     platform: 'PlayStation',

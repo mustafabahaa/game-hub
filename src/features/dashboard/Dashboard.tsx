@@ -1,6 +1,6 @@
-import { useMemo, useState, type ReactElement } from 'react';
-import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper, PageHeader, useMediaQuery, useTheme } from '@monochrome-ui/design-system';
-import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
+import { useEffect, useMemo, useState, type ReactElement } from 'react';
+import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper, PageHeader, Menu, MenuItem, useMediaQuery, useTheme } from '@monochrome-ui/design-system';
+import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2, MonitorIcon as Monitor, PlayStationIcon, XboxIcon, SortIcon } from '@/components/AppIcon';
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useAccounts, useDeleteAccount } from '@/hooks/useGamehub';
@@ -8,10 +8,22 @@ import { AccountCard, AccountCardSkeleton } from '@/components/AccountCard';
 import { AccountModal } from '@/components/AccountModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import type { Account, Platform } from '@/domain/types';
+import { getAccountInfoFields } from '@/domain/accountInfo';
 
-const PLATFORMS: ('All' | Platform)[] = ['All', 'PlayStation', 'Xbox', 'PC'];
+const PLATFORMS: Platform[] = ['PlayStation', 'Xbox', 'PC'];
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
 const CARD_GAP = 12;
+const PLATFORM_STORAGE_KEY = 'gamehub.vault.platform';
+type SortOption = 'recent' | 'name-asc' | 'name-desc';
+
+function getSavedPlatform(): Platform {
+  try {
+    const saved = window.localStorage.getItem(PLATFORM_STORAGE_KEY);
+    return PLATFORMS.includes(saved as Platform) ? saved as Platform : 'PlayStation';
+  } catch {
+    return 'PlayStation';
+  }
+}
 
 export function Dashboard() {
   const { breakpoints } = useTheme();
@@ -27,10 +39,19 @@ export function Dashboard() {
   const deleteAccount = useDeleteAccount(uid ?? '');
 
   const [search, setSearch] = useState('');
-  const [platform, setPlatform] = useState<'All' | Platform>('All');
-  const [sort, setSort] = useState<'recent' | 'name'>('recent');
+  const [platform, setPlatform] = useState<Platform>(getSavedPlatform);
+  const [sort, setSort] = useState<SortOption>('recent');
+  const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Account | undefined>();
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PLATFORM_STORAGE_KEY, platform);
+    } catch {
+      // Filtering remains usable if browser storage is unavailable.
+    }
+  }, [platform]);
 
   const addAccountRequested = searchParams.get('action') === 'add-account';
   const closeAccountModal = () => {
@@ -43,42 +64,62 @@ export function Dashboard() {
 
   const filtered = useMemo(() => {
     let list = accounts ?? [];
-    if (platform !== 'All') list = list.filter((a) => a.platform === platform);
+    list = list.filter((a) => a.platform === platform);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((a) => a.accountName.toLowerCase().includes(q) || (a.email ?? '').toLowerCase().includes(q) || (a.games ?? []).some((g) => g.title.toLowerCase().includes(q)));
+      list = list.filter((a) => a.accountName.toLowerCase().includes(q)
+        || getAccountInfoFields(a).some((field) => !field.secret && `${field.label} ${field.value}`.toLowerCase().includes(q))
+        || (a.games ?? []).some((g) => g.title.toLowerCase().includes(q)));
     }
-    if (sort === 'name') list = [...list].sort((a, b) => a.accountName.localeCompare(b.accountName));
+    if (sort !== 'recent') list = [...list].sort((a, b) => {
+      const order = a.accountName.localeCompare(b.accountName);
+      return sort === 'name-asc' ? order : -order;
+    });
     return list;
   }, [accounts, platform, search, sort]);
+  const sortLabel = sort === 'recent' ? 'Recently added' : sort === 'name-asc' ? 'Name A–Z' : 'Name Z–A';
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Stack spacing={2}>
+      <Stack spacing={3}>
         {/* Header */}
         <PageHeader
           title="Your Vault"
-          subtitle={`${accounts?.length ?? 0} ${(accounts?.length ?? 0) === 1 ? 'account' : 'accounts'} · all platforms`}
+          subtitle={`${filtered.length} ${filtered.length === 1 ? 'account' : 'accounts'} · ${platform}`}
           action={<Button size="small" variant="contained" startIcon={<Plus size={16} />} onClick={() => setModalOpen(true)}>Add Account</Button>}
         />
 
-        {/* Search */}
-        <TextField
-          fullWidth size="small" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search accounts, emails, or games…"
-          slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
-        />
-
-        {/* Filters */}
+        {/* Search and platform filters */}
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-          {PLATFORMS.map((p) => (
-            <Chip
-              key={p} label={p} size="small" onClick={() => setPlatform(p)}
-              variant={platform === p ? 'filterSelected' : 'filter'}
+          <Box sx={{ width: '100%', maxWidth: 360 }}>
+            <TextField
+              fullWidth size="small" value={search} onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search accounts, emails, or games…"
+              slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
             />
-          ))}
-          <Chip size="small" label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="filterAction" sx={{ ml: 'auto' }} />
+          </Box>
+          <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
+            {PLATFORMS.map((p) => (
+              <Chip
+                key={p}
+                label={p === 'PlayStation' ? <PlayStationIcon size={20} /> : p === 'Xbox' ? <XboxIcon size={20} /> : <Monitor size={20} />}
+                title={p}
+                aria-label={p}
+                size="small"
+                onClick={() => setPlatform(p)}
+                variant={platform === p ? 'filterSelected' : 'filter'}
+              />
+            ))}
+            <Chip size="small" icon={<SortIcon size={16} />} label={sortLabel} title="Sort accounts"
+              aria-label={`Sort accounts, ${sortLabel}`} onClick={(event) => setSortAnchor(event.currentTarget)} variant="filter" />
+          </Stack>
         </Stack>
+
+        <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}>
+          <MenuItem selected={sort === 'recent'} onClick={() => { setSort('recent'); setSortAnchor(null); }}>Recently added</MenuItem>
+          <MenuItem selected={sort === 'name-asc'} onClick={() => { setSort('name-asc'); setSortAnchor(null); }}>Name A–Z</MenuItem>
+          <MenuItem selected={sort === 'name-desc'} onClick={() => { setSort('name-desc'); setSortAnchor(null); }}>Name Z–A</MenuItem>
+        </Menu>
 
         {isLoading && (
           <VaultMasonry columns={columns} loading>

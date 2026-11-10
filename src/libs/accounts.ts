@@ -49,6 +49,10 @@ export const accountsLib = {
     const now = new Date().toISOString();
     await setDocById(this.accountsCollection(uid), id, {
       ...form,
+      email: null,
+      notes: null,
+      password: null,
+      otpSecret: null,
       createdAt: now,
       updatedAt: now,
     });
@@ -58,6 +62,10 @@ export const accountsLib = {
   async update(uid: string, id: string, form: Partial<AccountFormData>): Promise<void> {
     await updateDocById(this.accountsCollection(uid), id, {
       ...form,
+      email: null,
+      notes: null,
+      password: null,
+      otpSecret: null,
       updatedAt: new Date().toISOString(),
     });
   },

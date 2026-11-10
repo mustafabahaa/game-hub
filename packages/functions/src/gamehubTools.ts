@@ -18,19 +18,38 @@ const accountTypes = z.enum(['Primary', 'Secondary', 'Full']).nullable();
 const lifecycleTypes = z.enum(['lifetime', 'expires_on']);
 const httpsUrl = z.string().url().refine((value) => new URL(value).protocol === 'https:', 'Use an HTTPS URL.');
 const confirmed = z.literal(true).describe('Must be true only after the user explicitly confirmed this exact action.');
+const sensitiveLabel = /(password|passcode|otp|secret|token|recovery code|backup code)/i;
+const safeInfoFields = z.array(z.object({
+  id: z.string().min(1).max(128),
+  label: z.string().trim().min(1).max(120),
+  value: z.string().max(4000),
+  secret: z.boolean().optional(),
+}).strict().refine((field) => !field.secret && !sensitiveLabel.test(field.label), 'Sensitive account info can only be changed in the app.')).max(100);
+const safeAccountInfo = (data: FirebaseFirestore.DocumentData) => {
+  const fields: Array<{ id?: string; label?: string; value?: string; secret?: boolean }> = Array.isArray(data.infoFields) ? [...data.infoFields] : [];
+  const known = new Set(fields.map((field) => field.id));
+  const legacy = [
+    { id: 'legacy-email', label: 'Email', value: data.email ?? '' },
+    { id: 'legacy-password', label: 'Password', value: data.password ?? '', secret: true },
+    { id: 'legacy-otp', label: 'OTP secret', value: data.otpSecret ?? '', secret: true },
+    { id: 'legacy-notes', label: 'Notes', value: data.notes ?? '' },
+  ];
+  for (const field of legacy) if (field.value && !known.has(field.id)) fields.push(field);
+  return fields.map((field) => {
+    const secret = Boolean(field.secret) || sensitiveLabel.test(field.label ?? '');
+    return { id: field.id ?? null, label: field.label ?? '', value: secret ? null : field.value ?? '', secret, hasValue: Boolean(field.value) };
+  });
+};
 const safeAccount = (id: string, data: FirebaseFirestore.DocumentData) => ({
   id,
   accountName: data.accountName ?? '',
-  email: data.email ?? '',
-  notes: data.notes ?? null,
+  infoFields: safeAccountInfo(data),
   platform: data.platform ?? null,
   accountType: data.accountType ?? null,
   providerId: data.providerId ?? null,
   isPsPlus: Boolean(data.isPsPlus),
   lifecycleType: data.lifecycleType ?? 'lifetime',
   expiresOn: data.expiresOn ?? null,
-  hasPassword: Boolean(data.password),
-  hasOtpSecret: Boolean(data.otpSecret),
   createdAt: data.createdAt ?? null,
   updatedAt: data.updatedAt ?? null,
 });
@@ -108,7 +127,7 @@ export function createGamehubTools(uid: string, db: Firestore): Record<string, G
       return { ...safeAccount(account.snapshot.id, account.data), games: games.docs.map((doc) => safeGame(doc.id, doc.data())) };
     }),
     create_account: define('Create an account for the signed-in user. Credentials must be added or changed in the app for security.', z.object({
-      accountName: z.string().trim().min(1).max(160), email: z.string().trim().email().max(320).nullable().optional(), notes: z.string().max(4000).nullable().optional(), platform: platforms,
+      accountName: z.string().trim().min(1).max(160), infoFields: safeInfoFields.optional(), platform: platforms,
       accountType: accountTypes.optional(), providerId: z.string().nullable().optional(), isPsPlus: z.boolean().default(false),
       lifecycleType: lifecycleTypes.default('lifetime'), expiresOn: z.string().date().nullable().optional(),
     }).strict(), 'write', async (input) => {
@@ -116,13 +135,19 @@ export function createGamehubTools(uid: string, db: Firestore): Record<string, G
       await accountRef(id).set({ ...input, createdAt: timestamp, updatedAt: timestamp });
       return { id, created: true };
     }),
-    update_account: define('Update non-secret fields on one of the signed-in user’s accounts. Password and OTP values can only be changed in the app.', z.object({
-      accountId: z.string().min(1).max(128), accountName: z.string().trim().min(1).max(160).optional(), email: z.string().trim().email().max(320).nullable().optional(), notes: z.string().max(4000).nullable().optional(),
+    update_account: define('Update general information for one of the signed-in user’s accounts. Sensitive account fields can only be changed in the app.', z.object({
+      accountId: z.string().min(1).max(128), accountName: z.string().trim().min(1).max(160).optional(), infoFields: safeInfoFields.optional(),
       platform: platforms.optional(), accountType: accountTypes.optional(), providerId: z.string().nullable().optional(), isPsPlus: z.boolean().optional(),
       lifecycleType: lifecycleTypes.optional(), expiresOn: z.string().date().nullable().optional(),
     }).strict(), 'write', async ({ accountId, ...fields }) => {
-      const { ref } = await requireAccount(accountId);
-      await ref.update({ ...fields, updatedAt: now() });
+      const { ref, data } = await requireAccount(accountId);
+      const update = { ...fields } as Record<string, unknown>;
+      if (fields.infoFields !== undefined) {
+        const stored = Array.isArray(data.infoFields) ? data.infoFields as Array<{ label?: string; secret?: boolean }> : [];
+        const privateFields = stored.filter((field) => field.secret || sensitiveLabel.test(field.label ?? ''));
+        update.infoFields = [...privateFields, ...fields.infoFields];
+      }
+      await ref.update({ ...update, updatedAt: now() });
       return { id: accountId, updated: true };
     }),
     delete_account: define('Permanently delete one of the signed-in user’s accounts and its game records. Requires explicit confirmation.', z.object({ accountId: z.string().min(1).max(128), confirm: confirmed }).strict(), 'delete', async ({ accountId, confirm }) => {

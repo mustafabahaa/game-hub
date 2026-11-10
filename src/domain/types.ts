@@ -9,6 +9,13 @@ export type Platform = 'PlayStation' | 'Xbox' | 'PC';
 export type AccountType = 'Primary' | 'Secondary' | 'Full';
 export type LifecycleType = 'lifetime' | 'expires_on';
 
+export interface AccountInfoField {
+  id: string;
+  label: string;
+  value: string;
+  secret?: boolean;
+}
+
 export interface Game {
   id: string;
   accountId: string;
@@ -32,10 +39,12 @@ export interface GameFormData {
 export interface Account {
   id: string;
   accountName: string;
+  /** Legacy fields are read for older Firestore documents; new edits use infoFields. */
   email?: string | null;
   notes?: string | null;
   password?: string | null;
   otpSecret?: string | null;
+  infoFields?: AccountInfoField[];
   providerId?: string | null;
   accountType?: AccountType | null;
   platform: Platform;
@@ -49,10 +58,7 @@ export interface Account {
 
 export interface AccountFormData {
   accountName: string;
-  email?: string | null;
-  notes?: string | null;
-  password?: string | null;
-  otpSecret?: string | null;
+  infoFields?: AccountInfoField[];
   providerId?: string | null;
   accountType?: AccountType | null;
   platform: Platform;

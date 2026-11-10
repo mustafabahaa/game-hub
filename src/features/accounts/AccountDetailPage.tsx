@@ -1,16 +1,17 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, MenuItem, Paper, Select, Stack, TextField, Typography,
+  Box, Button, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, MenuItem, Paper, Select, Stack, Switch, TextField, Typography,
 } from '@monochrome-ui/design-system';
-import { ArrowLeftIcon as ArrowLeft, CalendarClockIcon as CalendarClock, CheckCircleIcon as Check, ContentCopyIcon as Copy, InfinityIcon, KeyIcon as KeyRound, EmailIcon as Mail, PencilIcon as Pencil, AddIcon as Plus, ShieldCheckIcon as ShieldCheck, DeleteOutlineIcon as Trash2, ImportIcon as Upload } from '@/components/AppIcon';
+import { ArrowLeftIcon as ArrowLeft, CalendarClockIcon as CalendarClock, InfinityIcon, KeyIcon as KeyRound, InfoOutlinedIcon as Info, PencilIcon as Pencil, AddIcon as Plus, DeleteOutlineIcon as Trash2, ImportIcon as Upload } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useAccounts, useCreateGame, useDeleteAccount, useDeleteGame, useProviders, useUpdateAccount, useUpdateGame } from '@/hooks/useGamehub';
 import { AccountModal } from '@/components/AccountModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { GameCover } from '@/components/GameCover';
 import { getLifecycleLabel, isAccountExpired } from '@/domain/lifecycle';
-import type { Account, Game } from '@/domain/types';
+import { cleanAccountInfoFields, getAccountInfoFields, isSensitiveAccountInfoLabel } from '@/domain/accountInfo';
+import type { Account, AccountInfoField, Game } from '@/domain/types';
 
 export function AccountDetailPage() {
   const { id } = useParams();
@@ -177,110 +178,108 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   </Box>;
 }
 
-const credentialFields = [
-  { key: 'email', label: 'Email', addLabel: 'Add email', type: 'email', Icon: Mail },
-  { key: 'password', label: 'Password', addLabel: 'Add password', type: 'password', Icon: KeyRound },
-  { key: 'otpSecret', label: 'OTP secret', addLabel: 'Add OTP secret', type: 'password', Icon: ShieldCheck },
-] as const;
-
-const noteField = { key: 'notes', label: 'Account note', addLabel: 'Add note', type: 'text' } as const;
-type InfoField = (typeof credentialFields)[number] | typeof noteField;
-type SavedNote = { label: string; value: string; gameId?: string };
-type InfoEditor = { mode: 'add'; field: InfoField } | { mode: 'edit' | 'delete'; note: SavedNote };
+type InfoEntry = AccountInfoField & { gameId?: string };
+type InfoEditor = { mode: 'add' } | { mode: 'edit' | 'delete'; field: InfoEntry };
 
 function AccountInfo({ account, uid }: { account: Account; uid: string }) {
   const updateAccount = useUpdateAccount(uid);
   const updateGame = useUpdateGame(uid, account.id);
   const [editor, setEditor] = useState<InfoEditor | null>(null);
+  const [labelDraft, setLabelDraft] = useState('');
   const [draft, setDraft] = useState('');
+  const [secretDraft, setSecretDraft] = useState(false);
   const [shownSecrets, setShownSecrets] = useState<Record<string, boolean>>({});
-  const [copied, setCopied] = useState<string | null>(null);
 
-  const notes: SavedNote[] = [];
-  if (account.notes?.trim()) notes.push({ label: noteField.label, value: account.notes });
-  for (const game of account.games ?? []) {
-    if (game.notes?.trim()) notes.push({ label: `${game.title} note`, value: game.notes, gameId: game.id });
-  }
-  const missingFields: InfoField[] = credentialFields.filter(({ key }) => !account[key]?.trim());
-  if (notes.length === 0) missingFields.push(noteField);
+  const accountFields = getAccountInfoFields(account);
+  const gameNotes: InfoEntry[] = (account.games ?? []).flatMap((game) => game.notes?.trim()
+    ? [{ id: `game-note-${game.id}`, label: `${game.title} note`, value: game.notes, gameId: game.id }]
+    : []);
+  const infoEntries: InfoEntry[] = [...accountFields, ...gameNotes];
 
   const saving = updateAccount.isPending || updateGame.isPending;
   const saveFailed = updateAccount.isError || updateGame.isError;
-  const field = editor?.mode === 'add' ? editor.field : noteField;
   const deleting = editor?.mode === 'delete';
 
   const openEditor = (next: InfoEditor) => {
     updateAccount.reset();
     updateGame.reset();
-    setDraft(next.mode === 'edit' ? next.note.value : '');
+    setLabelDraft(next.mode === 'edit' && !next.field.gameId ? next.field.label : '');
+    setDraft(next.mode === 'edit' ? next.field.value : '');
+    setSecretDraft(next.mode === 'edit' && !next.field.gameId ? Boolean(next.field.secret) : false);
     setEditor(next);
   };
 
   const closeEditor = () => {
     setDraft('');
+    setLabelDraft('');
+    setSecretDraft(false);
     setEditor(null);
   };
 
   const saveInfo = (event: React.SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editor || saving || (!deleting && !draft.trim())) return;
-    const value = deleting ? null : field.key === 'password' ? draft : draft.trim();
-    const gameId = editor.mode === 'add' ? undefined : editor.note.gameId;
-
-    if (gameId) {
-      updateGame.mutate({ gameId, form: { notes: value } }, { onSuccess: closeEditor });
+    if (!editor || saving || (!deleting && (!draft.trim() || (editor.mode === 'add' && !labelDraft.trim()) || (editor.mode === 'edit' && !editor.field.gameId && !labelDraft.trim())))) return;
+    if (editor.mode !== 'add' && editor.field.gameId) {
+      updateGame.mutate({ gameId: editor.field.gameId, form: { notes: deleting ? null : draft.trim() } }, { onSuccess: closeEditor });
     } else {
-      updateAccount.mutate({ id: account.id, form: { [field.key]: value } }, { onSuccess: closeEditor });
+      const nextFields = getAccountInfoFields(account);
+      if (editor.mode === 'add') {
+        nextFields.push({ id: crypto.randomUUID(), label: labelDraft.trim(), value: draft.trim(), secret: secretDraft || isSensitiveAccountInfoLabel(labelDraft) });
+      } else {
+        const index = nextFields.findIndex((field) => field.id === editor.field.id);
+        if (deleting && index >= 0) nextFields.splice(index, 1);
+        else if (index >= 0) nextFields[index] = { ...nextFields[index], label: labelDraft.trim(), value: draft.trim(), secret: secretDraft || isSensitiveAccountInfoLabel(labelDraft) };
+      }
+      updateAccount.mutate({ id: account.id, form: {
+        infoFields: cleanAccountInfoFields(nextFields),
+      } }, { onSuccess: closeEditor });
     }
   };
 
   return (
     <Section title="Account info">
       <Stack divider={<Divider />}>
-        {credentialFields.map(({ key, label, type, Icon }) => {
-          const value = account[key];
-          if (!value?.trim()) return null;
-          return <Credential key={key} icon={<Icon size={17} />} label={label} value={value} secret={type === 'password'}
-            shown={shownSecrets[key]} onReveal={() => setShownSecrets((previous) => ({ ...previous, [key]: !previous[key] }))}
-            copied={copied === key} onCopy={() => copyValue(key, value, setCopied)} />;
-        })}
-        {notes.map((note) => (
-          <Stack key={note.gameId ?? 'account'} direction="row" alignItems="flex-start" spacing={1} sx={{ py: 1.5 }}>
+        {infoEntries.map((entry) => (
+          <Stack key={entry.id} direction="row" alignItems="flex-start" spacing={1} sx={{ py: 1.5 }}>
+            <Box sx={{ display: 'flex', pt: 0.25 }}>{entry.secret ? <KeyRound size={17} /> : <Info size={17} />}</Box>
             <Stack spacing={0.25} sx={{ minWidth: 0, flex: 1 }}>
-              <Typography variant="metadataLabel" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{note.label}</Typography>
-              <Typography variant="bodyNote" sx={{ overflowWrap: 'anywhere' }}>{note.value}</Typography>
+              <Typography variant="metadataLabel" color="text.secondary" sx={{ overflowWrap: 'anywhere' }}>{entry.label}</Typography>
+              <Typography variant={entry.secret && !shownSecrets[entry.id] ? 'monospaceValue' : 'bodyNote'} sx={{ overflowWrap: 'anywhere' }}>
+                {entry.secret && !shownSecrets[entry.id] ? '••••••••' : entry.value}
+              </Typography>
             </Stack>
-            <IconButton size="small" variant="quietAction" aria-label={`Edit ${note.label}`} onClick={() => openEditor({ mode: 'edit', note })}>
+            {entry.secret && <Button size="small" onClick={() => setShownSecrets((previous) => ({ ...previous, [entry.id]: !previous[entry.id] }))}>
+              {shownSecrets[entry.id] ? 'Hide' : 'Reveal'}
+            </Button>}
+            <IconButton size="small" variant="quietAction" aria-label={`Edit ${entry.label}`} onClick={() => openEditor({ mode: 'edit', field: entry })}>
               <Pencil size={16} />
             </IconButton>
-            <IconButton size="small" variant="quietAction" color="error" aria-label={`Delete ${note.label}`} onClick={() => openEditor({ mode: 'delete', note })}>
+            <IconButton size="small" variant="quietAction" color="error" aria-label={`Delete ${entry.label}`} onClick={() => openEditor({ mode: 'delete', field: entry })}>
               <Trash2 size={16} />
             </IconButton>
           </Stack>
         ))}
       </Stack>
-      {missingFields.length > 0 && (
-        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
-          {missingFields.map((item) => (
-            <Button key={item.key} size="small" variant="outlined" startIcon={<Plus size={15} />}
-              onClick={() => openEditor({ mode: 'add', field: item })}>
-              {item.addLabel}
-            </Button>
-          ))}
-        </Stack>
-      )}
+      <Button size="small" variant="outlined" startIcon={<Plus size={15} />} onClick={() => openEditor({ mode: 'add' })} sx={{ mt: 1 }}>Add info</Button>
       {editor && (
         <Dialog open onClose={() => { if (!saving) closeEditor(); }} maxWidth="xs" fullWidth>
           <Box component="form" onSubmit={saveInfo}>
-            <DialogTitle>{editor.mode === 'add' ? field.addLabel : deleting ? 'Delete note?' : 'Edit note'}</DialogTitle>
+            <DialogTitle>{editor.mode === 'add' ? 'Add info' : deleting ? `Delete ${editor.field.label}?` : `Edit ${editor.field.label}`}</DialogTitle>
             <DialogContent>
               {editor.mode === 'delete' ? (
-                <Typography variant="body2" color="text.secondary">Remove the saved note from {editor.note.gameId ? 'this game' : 'this account'}.</Typography>
+                <Typography variant="body2" color="text.secondary">Remove this saved information?</Typography>
               ) : (
-                <TextField autoFocus required fullWidth label={editor.mode === 'edit' ? editor.note.label : field.label} type={field.type}
-                  multiline={field.key === 'notes'} minRows={field.key === 'notes' ? 3 : undefined}
-                  autoComplete={field.key === 'password' ? 'new-password' : 'off'}
-                  value={draft} onChange={(event) => setDraft(event.target.value)} sx={{ mt: 1 }} />
+                <Stack spacing={2} sx={{ mt: 1 }}>
+                  {(editor.mode === 'add' || !editor.field.gameId) && <TextField autoFocus required fullWidth label="Label" value={labelDraft} onChange={(event) => setLabelDraft(event.target.value)} />}
+                  <TextField autoFocus={editor.mode === 'edit' && Boolean(editor.field.gameId)} required fullWidth label="Value"
+                    multiline={editor.mode === 'edit' ? Boolean(editor.field.gameId) || /note|description/i.test(labelDraft) : /note|description/i.test(labelDraft)} minRows={3}
+                    type={secretDraft ? 'password' : 'text'} autoComplete={secretDraft ? 'new-password' : 'off'}
+                    value={draft} onChange={(event) => setDraft(event.target.value)} />
+                  {editor.mode === 'add' || !editor.field.gameId ? <Stack direction="row" alignItems="center" spacing={1}>
+                    <Switch checked={secretDraft} onChange={(event) => setSecretDraft(event.target.checked)} slotProps={{ input: { 'aria-label': 'Mark as sensitive' } }} />
+                    <Typography variant="body2">Hide this value by default</Typography>
+                  </Stack> : null}
+                </Stack>
               )}
               {saveFailed && <Typography role="alert" variant="body2" color="error" sx={{ mt: 1 }}>
                 {deleting ? 'Couldn’t delete the note. Please try again.' : 'Couldn’t save. Please try again.'}
@@ -289,25 +288,13 @@ function AccountInfo({ account, uid }: { account: Account; uid: string }) {
             <DialogActions>
               <Button disabled={saving} onClick={closeEditor}>Cancel</Button>
               <Button type="submit" variant="contained" color={deleting ? 'error' : 'primary'}
-                disabled={!deleting && !draft.trim()} loading={saving}>{deleting ? 'Delete note' : 'Save'}</Button>
+                disabled={!deleting && (!draft.trim() || ((editor.mode === 'add' || !editor.field.gameId) && !labelDraft.trim()))} loading={saving}>{deleting ? 'Delete' : 'Save'}</Button>
             </DialogActions>
           </Box>
         </Dialog>
       )}
     </Section>
   );
-}
-
-function Credential({ icon, label, value, secret, shown, copied, onReveal, onCopy }: { icon: React.ReactNode; label: string; value: string; secret?: boolean; shown?: boolean; copied: boolean; onReveal?: () => void; onCopy: () => void }) {
-  return <Stack direction="row" alignItems="center" spacing={1.5} sx={{ py: 1.5, minWidth: 0 }}>
-    <Typography component="span" color="text.secondary" sx={{ display: 'flex', flexShrink: 0 }}>{icon}</Typography>
-    <Stack direction="column" spacing={0.25} sx={{ flex: 1, minWidth: 0 }}>
-      <Typography variant="metadataLabel" color="text.secondary">{label}</Typography>
-      <Typography variant="monospaceValue">{secret && !shown ? '••••••••' : value}</Typography>
-    </Stack>
-    {secret && <Button size="small" onClick={onReveal} sx={{ minWidth: 0, px: 1, flexShrink: 0 }}>{shown ? 'Hide' : 'Reveal'}</Button>}
-    <IconButton size="small" aria-label={`Copy ${label}`} onClick={onCopy} sx={{ flexShrink: 0 }}>{copied ? <Check size={16} /> : <Copy size={16} />}</IconButton>
-  </Stack>;
 }
 
 function GameRow({ game, providerName, onEdit, onDelete }: { game: Game; providerName?: string; onEdit: () => void; onDelete: () => void }) {
@@ -322,12 +309,4 @@ function GameRow({ game, providerName, onEdit, onDelete }: { game: Game; provide
       <IconButton aria-label={`Remove ${game.title}`} size="small" color="error" variant="quietAction" onClick={onDelete}><Trash2 size={16} /></IconButton>
     </Stack>
   </Stack>;
-}
-
-function copyValue(key: string, value: string, setCopied: (key: string | null) => void) {
-  if (!value || !navigator.clipboard) return;
-  void navigator.clipboard.writeText(value).then(() => {
-    setCopied(key);
-    window.setTimeout(() => setCopied(null), 1400);
-  }).catch(() => setCopied(null));
 }
