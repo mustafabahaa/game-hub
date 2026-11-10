@@ -22,6 +22,7 @@ const safeAccount = (id: string, data: FirebaseFirestore.DocumentData) => ({
   id,
   accountName: data.accountName ?? '',
   email: data.email ?? '',
+  notes: data.notes ?? null,
   platform: data.platform ?? null,
   accountType: data.accountType ?? null,
   providerId: data.providerId ?? null,
@@ -37,6 +38,8 @@ const safeGame = (id: string, data: FirebaseFirestore.DocumentData) => ({
   id,
   accountId: data.accountId ?? null,
   title: data.title ?? '',
+  providerId: data.providerId ?? null,
+  notes: data.notes ?? null,
   imageUrl: data.imageUrl ?? null,
   createdAt: data.createdAt ?? null,
 });
@@ -105,7 +108,7 @@ export function createGamehubTools(uid: string, db: Firestore): Record<string, G
       return { ...safeAccount(account.snapshot.id, account.data), games: games.docs.map((doc) => safeGame(doc.id, doc.data())) };
     }),
     create_account: define('Create an account for the signed-in user. Credentials must be added or changed in the app for security.', z.object({
-      accountName: z.string().trim().min(1).max(160), email: z.string().trim().email().max(320), platform: platforms,
+      accountName: z.string().trim().min(1).max(160), email: z.string().trim().email().max(320).nullable().optional(), notes: z.string().max(4000).nullable().optional(), platform: platforms,
       accountType: accountTypes.optional(), providerId: z.string().nullable().optional(), isPsPlus: z.boolean().default(false),
       lifecycleType: lifecycleTypes.default('lifetime'), expiresOn: z.string().date().nullable().optional(),
     }).strict(), 'write', async (input) => {
@@ -114,7 +117,7 @@ export function createGamehubTools(uid: string, db: Firestore): Record<string, G
       return { id, created: true };
     }),
     update_account: define('Update non-secret fields on one of the signed-in user’s accounts. Password and OTP values can only be changed in the app.', z.object({
-      accountId: z.string().min(1).max(128), accountName: z.string().trim().min(1).max(160).optional(), email: z.string().trim().email().max(320).optional(),
+      accountId: z.string().min(1).max(128), accountName: z.string().trim().min(1).max(160).optional(), email: z.string().trim().email().max(320).nullable().optional(), notes: z.string().max(4000).nullable().optional(),
       platform: platforms.optional(), accountType: accountTypes.optional(), providerId: z.string().nullable().optional(), isPsPlus: z.boolean().optional(),
       lifecycleType: lifecycleTypes.optional(), expiresOn: z.string().date().nullable().optional(),
     }).strict(), 'write', async ({ accountId, ...fields }) => {
@@ -143,18 +146,20 @@ export function createGamehubTools(uid: string, db: Firestore): Record<string, G
       const snap = await gamesRef(accountId).orderBy('createdAt', 'asc').limit(boundedPageSize(limit, 100)).get();
       return snap.docs.map((doc) => safeGame(doc.id, doc.data()));
     }),
-    add_game: define('Add a game title and optional cover URL to one of the signed-in user’s accounts.', z.object({
-      accountId: z.string().min(1).max(128), title: z.string().trim().min(1).max(200), imageUrl: httpsUrl.nullable().optional(),
-    }).strict(), 'write', async ({ accountId, title, imageUrl }) => {
+    add_game: define('Add a game title, optional notes, provider, and cover URL to one of the signed-in user’s accounts.', z.object({
+      accountId: z.string().min(1).max(128), title: z.string().trim().min(1).max(200), notes: z.string().max(4000).nullable().optional(), providerId: z.string().nullable().optional(), imageUrl: httpsUrl.nullable().optional(),
+    }).strict(), 'write', async ({ accountId, title, imageUrl, notes, providerId }) => {
       await requireAccount(accountId);
+      if (providerId) await requireOwnedProvider(providerId);
       const id = randomUUID();
-      await gamesRef(accountId).doc(id).set({ accountId, title, imageUrl: imageUrl ?? null, createdAt: now() });
+      await gamesRef(accountId).doc(id).set({ accountId, title, notes: notes ?? null, providerId: providerId ?? null, imageUrl: imageUrl ?? null, createdAt: now() });
       return { id, created: true };
     }),
-    update_game: define('Update a game title or HTTPS cover URL in one of the signed-in user’s accounts.', z.object({
-      accountId: z.string().min(1).max(128), gameId: z.string().min(1).max(128), title: z.string().trim().min(1).max(200).optional(), imageUrl: httpsUrl.nullable().optional(),
-    }).strict().refine(({ title, imageUrl }) => title !== undefined || imageUrl !== undefined, 'Provide a title or cover URL to update.'), 'write', async ({ accountId, gameId, ...fields }) => {
+    update_game: define('Update a game title, notes, provider, or HTTPS cover URL in one of the signed-in user’s accounts.', z.object({
+      accountId: z.string().min(1).max(128), gameId: z.string().min(1).max(128), title: z.string().trim().min(1).max(200).optional(), notes: z.string().max(4000).nullable().optional(), providerId: z.string().nullable().optional(), imageUrl: httpsUrl.nullable().optional(),
+    }).strict().refine(({ title, notes, imageUrl, providerId }) => title !== undefined || notes !== undefined || providerId !== undefined || imageUrl !== undefined, 'Provide a title, notes, provider, or cover URL to update.'), 'write', async ({ accountId, gameId, ...fields }) => {
       await requireAccount(accountId);
+      if (fields.providerId) await requireOwnedProvider(fields.providerId);
       const ref = gamesRef(accountId).doc(gameId);
       const snapshot = await ref.get();
       if (!snapshot.exists) throw new Error('Game not found.');

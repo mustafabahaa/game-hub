@@ -1,5 +1,5 @@
 /** Games data-access — subcollection under each account. */
-import { listDocs, setDocById, deleteByPath, userCollectionPath } from './db';
+import { listDocs, setDocById, updateDocById, deleteByPath, userCollectionPath } from './db';
 import { deleteByUrl, uploadImage } from './storage';
 import type { Game, GameFormData } from '@/domain/types';
 
@@ -38,7 +38,7 @@ export const gamesLib = {
   },
 
   async update(uid: string, accountId: string, gameId: string, form: Partial<GameFormData>): Promise<void> {
-    await setDocById(this.gamesCollectionPath(uid, accountId), gameId, {
+    await updateDocById(this.gamesCollectionPath(uid, accountId), gameId, {
       ...form,
       updatedAt: new Date().toISOString(),
     });

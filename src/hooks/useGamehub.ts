@@ -31,7 +31,7 @@ export function useCreateAccount(uid: string) {
 export function useUpdateAccount(uid: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, form }: { id: string; form: AccountFormData }) => accountsLib.update(uid, id, form),
+    mutationFn: ({ id, form }: { id: string; form: Partial<AccountFormData> }) => accountsLib.update(uid, id, form),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.accounts(uid) }),
   });
 }

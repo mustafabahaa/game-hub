@@ -14,7 +14,9 @@ export interface Game {
   accountId: string;
   title: string;
   imageUrl?: string | null;
+  coverConsole?: 'PS4' | 'PS5' | null;
   providerId?: string | null;
+  notes?: string | null;
   createdAt: string;
 }
 
@@ -22,13 +24,16 @@ export interface Game {
 export interface GameFormData {
   title: string;
   imageUrl?: string | null;
+  coverConsole?: Game['coverConsole'];
   providerId?: string | null;
+  notes?: string | null;
 }
 
 export interface Account {
   id: string;
   accountName: string;
-  email: string;
+  email?: string | null;
+  notes?: string | null;
   password?: string | null;
   otpSecret?: string | null;
   providerId?: string | null;
@@ -44,7 +49,8 @@ export interface Account {
 
 export interface AccountFormData {
   accountName: string;
-  email: string;
+  email?: string | null;
+  notes?: string | null;
   password?: string | null;
   otpSecret?: string | null;
   providerId?: string | null;

@@ -12,6 +12,7 @@ import {
   getDoc as fsGetDoc,
   getDocs,
   setDoc as fsSetDoc,
+  updateDoc as fsUpdateDoc,
   deleteDoc as fsDeleteDoc,
   collection,
   query,
@@ -94,6 +95,10 @@ export async function setDocById<T extends DocumentData>(
 ): Promise<void> {
   const db = requireDb();
   await fsSetDoc(doc(db, collectionPath, docId), data, { merge: true });
+}
+
+export async function updateDocById(collectionPath: string, docId: string, data: DocumentData): Promise<void> {
+  await fsUpdateDoc(doc(requireDb(), collectionPath, docId), data);
 }
 
 /** Upsert a doc by full path. */

@@ -8,6 +8,7 @@
 import {
   listDocs,
   setDocById,
+  updateDocById,
   deleteDocById,
   deleteByPath,
   userCollectionPath,
@@ -54,8 +55,8 @@ export const accountsLib = {
     return id;
   },
 
-  async update(uid: string, id: string, form: AccountFormData): Promise<void> {
-    await setDocById(this.accountsCollection(uid), id, {
+  async update(uid: string, id: string, form: Partial<AccountFormData>): Promise<void> {
+    await updateDocById(this.accountsCollection(uid), id, {
       ...form,
       updatedAt: new Date().toISOString(),
     });

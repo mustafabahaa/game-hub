@@ -1,24 +1,13 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardMedia, Box, Paper, Typography, Chip, Button, Stack, IconButton, Collapse, Skeleton, Menu, MenuItem, ListItemText, DestructiveListIcon, Avatar, Tooltip } from '@monochrome-ui/design-system';
-import { ChevronDownIcon as ChevronDown, KeyIcon as KeyRound, ShieldCheckIcon as ShieldCheck, CalendarClockIcon as CalendarClock, InfinityIcon, EmailIcon as Mail, VisibilityIcon as Eye, VisibilityOffIcon as EyeOff, StarIcon as Star, MoreVerticalIcon as MoreVertical, DeleteOutlineIcon as Trash2 } from '@/components/AppIcon';
+import { useId, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Card, CardContent, Box, Paper, Typography, Button, Stack, IconButton, Collapse, Skeleton, Menu, MenuItem, ListItemText, DestructiveListIcon, Avatar, Tooltip, Link as UiLink } from '@monochrome-ui/design-system';
+import { ChevronDownIcon as ChevronDown, KeyIcon as KeyRound, ShieldCheckIcon as ShieldCheck, CalendarClockIcon as CalendarClock, InfinityIcon, EmailIcon as Mail, VisibilityIcon as Eye, VisibilityOffIcon as EyeOff, MoreVerticalIcon as MoreVertical, DeleteOutlineIcon as Trash2 } from '@/components/AppIcon';
 import type { Account } from '@/domain/types';
+import { GameCover } from '@/components/GameCover';
 import { getLifecycleLabel, isAccountExpired } from '@/domain/lifecycle';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useProviders } from '@/hooks/useGamehub';
 
-/**
- * AccountCard — follows the design-craft card anatomy.
- *
- * Game covers are PORTRAIT (3:4 box art). The card treats the first game's
- * cover as a full-bleed portrait hero (like a game library shelf tile), with
- * account name + platform overlaid on a gradient scrim. Below: lifecycle meta
- * + credentials drawer. This gives covers the vertical space they need.
- *
- * Tier 1 — HERO: full-bleed portrait cover + overlaid identity
- * Tier 2 — META: lifecycle, game count
- * Tier 3 — ACTION: credentials drawer
- */
 interface AccountCardProps {
   account: Account;
   onDelete?: (account: Account) => void;
@@ -32,93 +21,51 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
   const [showPass, setShowPass] = useState(false);
   const [showOtp, setShowOtp] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const infoId = useId();
 
   const games = account.games ?? [];
   const heroGame = games[0];
   const heroProvider = providers.find((provider) => provider.id === heroGame?.providerId);
   const expired = isAccountExpired(account);
+  const email = account.email?.trim();
+  const accountNotes = account.notes?.trim();
+  const gameNotes = games.flatMap((game) => game.notes?.trim() ? [{ id: game.id, title: game.title, notes: game.notes }] : []);
+  const hasInfo = Boolean(email || account.password || account.otpSecret || accountNotes || gameNotes.length);
+  const metadata = [account.accountType, account.isPsPlus ? 'PS Plus' : null, games.length > 1 ? `${games.length} games` : null]
+    .filter(Boolean).join(' · ');
 
   return (
-    <Card sx={{ cursor: 'pointer' }}>
-      {/* ── Tier 1: Hero cover (portrait 3:4 — game box art ratio) ── */}
-      <Paper elevation={0} variant="mediaHero">
-        {heroGame?.imageUrl ? (
-          <CardMedia component="img" image={heroGame.imageUrl} alt={heroGame.title} sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        ) : (
-          <Box sx={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center' }}>
-            <Typography variant="caption" color="text.disabled">No cover</Typography>
-          </Box>
-        )}
-
-        {/* Top overlay: platform + PS+ badges */}
-        <Stack direction="row" spacing={0.5} sx={{ position: 'absolute', top: 8, left: 8, right: 8, justifyContent: 'space-between' }}>
-          <Chip
-            label={account.platform}
-            size="small"
-            variant="overlayBadge"
-          />
-          {account.isPsPlus && (
-            <Chip
-              icon={<Star size={10} />}
-              label="PS+"
-              size="small"
-              variant="quietBadge"
-            />
-          )}
+    <Card sx={{ position: 'relative', minWidth: 0 }}>
+      <UiLink component={Link} to={`/accounts/${account.id}`} aria-label={`Open ${account.accountName}`} underline="none"
+        sx={{ display: 'block', mx: 1, mt: 1 }}>
+        <GameCover game={heroGame} platform={account.platform} />
+      </UiLink>
+      {onDelete && <IconButton variant="overlayAction" aria-label={`Actions for ${account.accountName}`}
+        aria-haspopup="menu" aria-expanded={Boolean(menuAnchor)} onClick={(event) => setMenuAnchor(event.currentTarget)}
+        sx={{ top: 56, right: 16 }}>
+        <MoreVertical size={17} />
+      </IconButton>}
+      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, '&:last-child': { pb: 1.5 } }}>
+        <Stack spacing={0.5}>
+          <Stack direction="row" alignItems="center" justifyContent="space-between" spacing={1} sx={{ minWidth: 0 }}>
+            <Typography variant="itemTitle" component="div" role="heading" aria-level={2} sx={{ minWidth: 0 }}>{account.accountName}</Typography>
+            {heroProvider && <Tooltip title={heroProvider.name}>
+              <IconButton size="small" aria-label={`Open ${heroProvider.name} provider`}
+                onClick={() => navigate(`/providers/${heroProvider.id}`)} sx={{ flexShrink: 0 }}>
+                <Avatar src={heroProvider.photoUrl ?? undefined} alt="" sx={{ width: 24, height: 24 }}>
+                  {heroProvider.name[0]?.toUpperCase()}
+                </Avatar>
+              </IconButton>
+            </Tooltip>}
+          </Stack>
+          {metadata && <Typography variant="caption" color="text.secondary">{metadata}</Typography>}
         </Stack>
-
-        {(heroProvider || onDelete) && <Stack direction="row" spacing={0.75} sx={{ position: 'absolute', top: 8, right: 8 }}>
-          {heroProvider && <Tooltip title={`${heroProvider.name} provider`}>
-            <IconButton
-              aria-label={`Open ${heroProvider.name} provider`}
-              onClick={(event) => { event.stopPropagation(); navigate(`/providers/${heroProvider.id}`); }}
-              variant="overlayAction"
-              sx={{ position: 'static' }}
-            >
-              {heroProvider.photoUrl
-                ? <Avatar src={heroProvider.photoUrl} alt="" sx={{ width: 24, height: 24 }} />
-                : <Avatar variant="mediaFallbackCompact" sx={{ width: 24, height: 24 }}>{heroProvider.name[0]?.toUpperCase()}</Avatar>}
-            </IconButton>
-          </Tooltip>}
-          {onDelete && <IconButton
-            aria-label={`Actions for ${account.accountName}`}
-            onClick={(event) => { event.stopPropagation(); setMenuAnchor(event.currentTarget); }}
-            variant="overlayAction"
-            sx={{ position: 'static' }}
-          >
-            <MoreVertical size={18} />
-          </IconButton>}
-        </Stack>}
-
-        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)} onClick={(event) => event.stopPropagation()}>
+        <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={() => setMenuAnchor(null)}>
           <MenuItem onClick={() => { setMenuAnchor(null); onDelete?.(account); }} color="error">
             <DestructiveListIcon><Trash2 size={17} /></DestructiveListIcon>
             <ListItemText>Delete account</ListItemText>
           </MenuItem>
         </Menu>
-
-        {/* Bottom overlay: account name on gradient scrim */}
-        <Paper elevation={0} variant="mediaScrim">
-          <Typography variant="heroTitle" noWrap title={account.accountName}>
-            {account.accountName}
-          </Typography>
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.25 }}>
-            {account.accountType && (
-              <Typography variant="heroMetadata">
-                {account.accountType}
-              </Typography>
-            )}
-            {games.length > 1 && (
-              <Typography variant="heroMetadata">
-                · {games.length} games
-              </Typography>
-            )}
-          </Stack>
-        </Paper>
-      </Paper>
-
-      {/* ── Tier 2 + 3: Meta + Actions ── */}
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
         {/* Lifecycle */}
         <Stack direction="row" spacing={0.5} alignItems="center">
           {account.lifecycleType === 'lifetime' ? (
@@ -136,33 +83,44 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
           )}
         </Stack>
 
-        {/* Credentials drawer */}
-        <Box>
+        {hasInfo && <Box>
           <Button
-            fullWidth size="small" variant="outlined"
-            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+            size="small" variant="outlined" fullWidth
+            aria-expanded={expanded}
+            aria-controls={infoId}
+            onClick={() => {
+              if (expanded) {
+                setShowPass(false);
+                setShowOtp(false);
+              }
+              setExpanded(!expanded);
+            }}
             endIcon={<ChevronDown size={14} style={{ transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />}
           >
-            Credentials
+            Info
           </Button>
-          <Collapse in={expanded}>
+          <Collapse id={infoId} in={expanded}>
             <Stack spacing={1.5} sx={{ mt: 1.5 }}>
-              <CredField icon={<Mail size={13} />} label="Email" value={account.email} />
-              <CredField
+              {email && <CredField icon={<Mail size={13} />} label="Email" value={email} />}
+              {account.password && <CredField
                 icon={<KeyRound size={13} />} label="Password"
-                value={account.password ?? '—'}
-                masked={!showPass && Boolean(account.password)}
+                value={account.password}
+                masked={!showPass}
                 onToggleMask={() => setShowPass((v) => !v)}
-              />
-              <CredField
+              />}
+              {account.otpSecret && <CredField
                 icon={<ShieldCheck size={13} />} label="OTP"
-                value={account.otpSecret ?? '—'}
-                masked={!showOtp && Boolean(account.otpSecret)}
+                value={account.otpSecret}
+                masked={!showOtp}
                 onToggleMask={() => setShowOtp((v) => !v)}
-              />
+              />}
+              {accountNotes && <NoteField label="Account notes" value={accountNotes} />}
+              {gameNotes.map((game) => (
+                <NoteField key={game.id} label={games.length > 1 ? `${game.title} notes` : 'Game notes'} value={game.notes} />
+              ))}
             </Stack>
           </Collapse>
-        </Box>
+        </Box>}
 
       </CardContent>
     </Card>
@@ -171,19 +129,11 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
 
 export function AccountCardSkeleton() {
   return (
-    <Card aria-hidden="true" sx={{ height: '100%' }}>
-        <Paper elevation={0} variant="mediaHero">
+    <Card aria-hidden="true">
+      <Paper elevation={0} variant="mediaHero" sx={{ aspectRatio: '5 / 8', mx: 1, mt: 1, width: 'auto' }}>
         <Skeleton variant="mediaCover" animation="wave" />
-        <Stack direction="row" justifyContent="space-between" sx={{ position: 'absolute', top: 10, left: 10, right: 10 }}>
-          <Skeleton variant="mediaBadge" animation="wave" width={76} height={24} />
-          <Skeleton variant="circular" animation="wave" width={30} height={30} />
-        </Stack>
-        <Paper elevation={0} variant="mediaScrim" sx={{ pt: 4, pb: 1.25 }}>
-          <Skeleton variant="mediaTitle" animation="wave" width="76%" height={24} />
-          <Skeleton variant="mediaMetadata" animation="wave" width="42%" height={16} />
-        </Paper>
-        </Paper>
-      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+      </Paper>
+      <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, '&:last-child': { pb: 1.5 } }}>
         <Stack direction="row" spacing={0.75} alignItems="center">
           <Skeleton variant="circular" animation="wave" width={14} height={14} />
           <Skeleton variant="text" animation="wave" width="48%" height={20} />
@@ -191,6 +141,15 @@ export function AccountCardSkeleton() {
         <Skeleton variant="mediaAction" animation="wave" width="100%" height={42} />
       </CardContent>
     </Card>
+  );
+}
+
+function NoteField({ label, value }: { label: string; value: string }) {
+  return (
+    <Stack spacing={0.5}>
+      <Typography variant="caption" color="text.secondary">{label}</Typography>
+      <Typography variant="bodyNote" sx={{ overflowWrap: 'anywhere' }}>{value}</Typography>
+    </Stack>
   );
 }
 
@@ -210,7 +169,7 @@ function CredField({ icon, label, value, masked, onToggleMask }: CredFieldProps)
         <Typography component="span" variant="caption" color="text.disabled" sx={{ display: 'flex' }}>{icon}</Typography>
         <Typography variant="caption" color="text.disabled">{label}</Typography>
         {canToggle && (
-          <IconButton size="small" onClick={onToggleMask} variant="quietAction" sx={{ ml: 'auto' }}>
+          <IconButton size="small" aria-label={`${masked ? 'Reveal' : 'Hide'} ${label}`} onClick={onToggleMask} variant="quietAction" sx={{ ml: 'auto' }}>
             {masked ? <EyeOff size={13} /> : <Eye size={13} />}
           </IconButton>
         )}

@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
-import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper, PageHeader } from '@monochrome-ui/design-system';
+import { useMemo, useState, type ReactElement } from 'react';
+import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper, PageHeader, useMediaQuery, useTheme } from '@monochrome-ui/design-system';
 import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2 } from '@/components/AppIcon';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useAccounts, useDeleteAccount } from '@/hooks/useGamehub';
 import { AccountCard, AccountCardSkeleton } from '@/components/AccountCard';
@@ -11,9 +11,15 @@ import type { Account, Platform } from '@/domain/types';
 
 const PLATFORMS: ('All' | Platform)[] = ['All', 'PlayStation', 'Xbox', 'PC'];
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
+const CARD_GAP = 12;
 
 export function Dashboard() {
-  const navigate = useNavigate();
+  const { breakpoints } = useTheme();
+  const atLeastSmall = useMediaQuery(breakpoints.up('sm'));
+  const atLeastMedium = useMediaQuery(breakpoints.up('md'));
+  const atLeastLarge = useMediaQuery(breakpoints.up('lg'));
+  const atLeastExtraLarge = useMediaQuery(breakpoints.up('xl'));
+  const columns = atLeastExtraLarge ? 6 : atLeastLarge ? 5 : atLeastMedium ? 4 : atLeastSmall ? 2 : 1;
   const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAppContext();
   const uid = user?.uid;
@@ -40,7 +46,7 @@ export function Dashboard() {
     if (platform !== 'All') list = list.filter((a) => a.platform === platform);
     if (search.trim()) {
       const q = search.toLowerCase();
-      list = list.filter((a) => a.accountName.toLowerCase().includes(q) || a.email.toLowerCase().includes(q) || (a.games ?? []).some((g) => g.title.toLowerCase().includes(q)));
+      list = list.filter((a) => a.accountName.toLowerCase().includes(q) || (a.email ?? '').toLowerCase().includes(q) || (a.games ?? []).some((g) => g.title.toLowerCase().includes(q)));
     }
     if (sort === 'name') list = [...list].sort((a, b) => a.accountName.localeCompare(b.accountName));
     return list;
@@ -48,17 +54,17 @@ export function Dashboard() {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Stack spacing={3}>
+      <Stack spacing={2}>
         {/* Header */}
         <PageHeader
           title="Your Vault"
           subtitle={`${accounts?.length ?? 0} ${(accounts?.length ?? 0) === 1 ? 'account' : 'accounts'} · all platforms`}
-          action={<Button variant="contained" startIcon={<Plus size={18} />} onClick={() => setModalOpen(true)}>Add Account</Button>}
+          action={<Button size="small" variant="contained" startIcon={<Plus size={16} />} onClick={() => setModalOpen(true)}>Add Account</Button>}
         />
 
         {/* Search */}
         <TextField
-          fullWidth value={search} onChange={(e) => setSearch(e.target.value)}
+          fullWidth size="small" value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Search accounts, emails, or games…"
           slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
         />
@@ -67,31 +73,17 @@ export function Dashboard() {
         <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
           {PLATFORMS.map((p) => (
             <Chip
-              key={p} label={p} onClick={() => setPlatform(p)}
+              key={p} label={p} size="small" onClick={() => setPlatform(p)}
               variant={platform === p ? 'filterSelected' : 'filter'}
             />
           ))}
-          <Chip label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="filterAction" sx={{ ml: 'auto' }} />
+          <Chip size="small" label={sort === 'recent' ? 'Recent' : 'A–Z'} onClick={() => setSort((s) => (s === 'recent' ? 'name' : 'recent'))} variant="filterAction" sx={{ ml: 'auto' }} />
         </Stack>
 
-        {/* Loading */}
         {isLoading && (
-          <Box sx={{ columnCount: { xs: 1, sm: 2, md: 3, lg: 4 }, columnGap: '20px' }}>
-            {SKELETON_KEYS.map((i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: 'inline-block',
-                  width: '100%',
-                  mb: '20px',
-                  breakInside: 'avoid',
-                  verticalAlign: 'top',
-                }}
-              >
-                <AccountCardSkeleton />
-              </Box>
-            ))}
-          </Box>
+          <VaultMasonry columns={columns} loading>
+            {SKELETON_KEYS.map((key) => <AccountCardSkeleton key={key} />)}
+          </VaultMasonry>
         )}
 
         {/* Empty */}
@@ -108,15 +100,12 @@ export function Dashboard() {
           </Paper>
         )}
 
-        {/* Keep account cards wide enough for their platform and account-type overlays. */}
         {!isLoading && filtered.length > 0 && (
-          <Box sx={{ columnCount: { xs: 1, sm: 2, md: 3, lg: 4 }, columnGap: '20px' }}>
+          <VaultMasonry columns={columns}>
             {filtered.map((account) => (
-              <Box key={account.id} onClick={() => navigate(`/accounts/${account.id}`)} sx={{ display: 'inline-block', width: '100%', mb: '20px', breakInside: 'avoid', verticalAlign: 'top', cursor: 'pointer' }}>
-                <AccountCard account={account} onDelete={setToDelete} />
-              </Box>
+              <AccountCard key={account.id} account={account} onDelete={setToDelete} />
             ))}
-          </Box>
+          </VaultMasonry>
         )}
 
       </Stack>
@@ -129,6 +118,22 @@ export function Dashboard() {
         onConfirm={() => { if (toDelete) deleteAccount.mutate(toDelete); setToDelete(undefined); }}
         onClose={() => setToDelete(undefined)}
       />
+    </Box>
+  );
+}
+
+function VaultMasonry({ columns, children, loading }: { columns: number; children: ReactElement[]; loading?: boolean }) {
+  const cardsByColumn = Array.from({ length: columns }, () => [] as ReactElement[]);
+  children.forEach((card, index) => cardsByColumn[index % columns].push(card));
+
+  return (
+    <Box role="list" aria-label="Game accounts" aria-hidden={loading}
+      sx={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, alignItems: 'start', gap: `${CARD_GAP}px` }}>
+      {cardsByColumn.map((cards, index) => (
+        <Stack key={index} role="presentation" useFlexGap spacing={`${CARD_GAP}px`} sx={{ minWidth: 0 }}>
+          {cards.map((card) => <Box key={card.key} role="listitem">{card}</Box>)}
+        </Stack>
+      ))}
     </Box>
   );
 }

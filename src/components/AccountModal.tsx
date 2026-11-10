@@ -44,6 +44,7 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
   const [form, setForm] = useState<AccountFormData>(() => account ? {
     accountName: account.accountName,
     email: account.email,
+    notes: account.notes ?? '',
     password: account.password ?? '',
     otpSecret: account.otpSecret ?? '',
     providerId: account.providerId ?? '',
@@ -60,6 +61,8 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
   const handleSubmit = async () => {
     const payload: AccountFormData = {
       ...form,
+      email: form.email?.trim() || null,
+      notes: form.notes?.trim() || null,
       password: form.password || null,
       otpSecret: form.otpSecret || null,
       providerId: form.providerId || null,
@@ -93,12 +96,19 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
               required
             />
             <TextField
+              label="Notes"
+              value={form.notes ?? ''}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              fullWidth
+              multiline
+              minRows={2}
+            />
+            <TextField
               label="Email"
               type="email"
-              value={form.email}
+              value={form.email ?? ''}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               fullWidth
-              required
             />
             <TextField
               label="Password"
@@ -202,7 +212,7 @@ function AccountModalContent({ account, onClose }: Omit<AccountModalProps, 'open
             <Button
               onClick={handleSubmit}
               variant="contained"
-              disabled={saving || !form.accountName || !form.email || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
+              disabled={saving || !form.accountName.trim() || Boolean(form.email?.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) || (form.lifecycleType === 'expires_on' && !form.expiresOn)}
               loading={saving}
               sx={{ width: { xs: '100%', sm: 'auto' }, whiteSpace: 'nowrap' }}
             >
@@ -219,6 +229,7 @@ function emptyForm(): AccountFormData {
   return {
     accountName: '',
     email: '',
+    notes: '',
     password: '',
     otpSecret: '',
     providerId: '',
