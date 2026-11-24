@@ -1,6 +1,6 @@
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { firebaseApp } from '@/config/firebase';
-import type { AssistantStreamEvent } from '@monochrome-ai/core';
+import type { AssistantStreamEvent } from '@agentic-ai/core';
 
 export type AssistantStreamChunk =
   | Extract<AssistantStreamEvent, { type: 'text' | 'approval' | 'error' }>

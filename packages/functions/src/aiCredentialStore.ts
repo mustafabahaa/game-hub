@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto';
-import { decryptJsonCredential, encryptJsonCredential } from '@monochrome-ai/core';
+import { decryptJsonCredential, encryptJsonCredential } from '@agentic-ai/core';
 import { getFirestore } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 import { defineSecret } from 'firebase-functions/params';

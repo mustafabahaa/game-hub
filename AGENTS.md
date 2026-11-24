@@ -1,5 +1,7 @@
 # GameHub UI Rules
 
+- Track `@monochrome-ui/design-system` and `@agentic-ai/core` using their GitHub `#main` specs in each manifest where they are used. Keep the exact resolved commits in the corresponding npm lockfiles. Run the prebuild sync for web and Functions before release, and fix compatibility issues surfaced by lint, type checking, or build.
+
 - The shared `@monochrome-ui/design-system` package from `github.com/mustafabahaa/monochrome-ui` is the single source of truth for component appearance.
 - Application views must import UI primitives and components from the shared design-system package, never directly from MUI. The package may re-export MUI primitives, but should also expose reusable project components and named variants through the same public API. Framework/theme utilities may be imported from MUI's non-component entry points when needed.
 - Enforce the design-system import boundary with lint: application code may not import visual primitives directly from MUI; exceptions should be limited to design-system internals and the shared icon adapter.

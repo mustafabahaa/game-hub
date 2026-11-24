@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "lint": "eslint src eslint.config.js eslint-rules",
+    "prebuild": "node packages/functions/scripts/sync-shared-dependencies.mjs",
     "build": "tsc -b && vite build",
     "build:functions": "npm --prefix packages/functions run build",
     "preview": "vite preview",
@@ -22,8 +23,8 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
-    "@monochrome-ai/core": "https://codeload.github.com/mustafabahaa/monochrome-ai/tar.gz/3ecabd9",
-    "@monochrome-ui/design-system": "https://codeload.github.com/mustafabahaa/monochrome-ui/tar.gz/bbc8777",
+    "@agentic-ai/core": "github:mustafabahaa/agentic-ai#main",
+    "@monochrome-ui/design-system": "github:mustafabahaa/monochrome-ui#main",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",
     "@mui/x-charts": "^9.7.0",

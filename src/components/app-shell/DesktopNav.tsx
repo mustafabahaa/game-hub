@@ -14,6 +14,7 @@ export function DesktopNav() {
   return (
     <Paper
       elevation={0}
+      square
       variant="desktopRail"
       component="aside"
       aria-label="Workspace sidebar"

@@ -1,5 +1,5 @@
 import { HttpsError } from 'firebase-functions/v2/https';
-import { runCodexHarness } from '@monochrome-ai/core';
+import { runCodexHarness } from '@agentic-ai/core';
 import { withProviderCredential } from './aiCredentialStore.js';
 
 export type ClientTool = { name: string; description: string; schema: object };
