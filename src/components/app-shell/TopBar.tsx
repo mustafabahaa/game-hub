@@ -35,15 +35,12 @@ export function TopBar() {
             component="button" type="button"
             onClick={() => navigate('/')} aria-label="GameHub home"
             sx={{
-              display: { xs: 'flex', md: 'none' }, flexShrink: 0, minWidth: 0, cursor: 'pointer',
+              display: { xs: 'flex', md: 'none' }, flexShrink: 0, width: 'auto', minWidth: 0,
               flexDirection: 'row', gap: { xs: 0.75, sm: 1.25 },
             }}
           >
             <BrandMark src="/logo-black.png" alt="" size={34} />
-            <Typography
-              variant="brandWordmark"
-              sx={{ '@media (max-width: 359px)': { display: 'none' } }}
-            >
+            <Typography variant="brandWordmark">
               GameHub
             </Typography>
           </BrandButton>
