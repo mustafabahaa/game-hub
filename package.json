@@ -23,7 +23,6 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@gsap/react": "^2.1.2",
-    "@agentic-ai/core": "github:mustafabahaa/agentic-ai#main",
     "@monochrome-ui/design-system": "github:mustafabahaa/monochrome-ui#main",
     "@mui/icons-material": "^7.2.0",
     "@mui/material": "^7.2.0",

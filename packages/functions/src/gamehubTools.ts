@@ -86,9 +86,9 @@ function define(
 }
 
 /**
- * One server-side GameHub tool registry shared by MCP and the in-app assistant.
+ * Server-side GameHub tool registry exposed through MCP.
  * Private records are always scoped to `uid`. Account passwords and OTP
- * values are never returned or accepted by AI tools.
+ * values are never returned or accepted by MCP tools.
  */
 export function createGamehubTools(uid: string, db: Firestore): Record<string, GamehubToolDefinition> {
   const accounts = db.collection(`users/${uid}/accounts`);

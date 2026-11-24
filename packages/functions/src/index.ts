@@ -6,14 +6,6 @@ import { HttpsError, onCall, onRequest } from 'firebase-functions/v2/https';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 export { gamehubMcpAuth } from './mcp/oauth.js';
-export {
-  getGamehubAiConnection,
-  startGamehubAiConnection,
-  cancelGamehubAiConnection,
-  disconnectGamehubAiConnection,
-  resolveGamehubAiToolApproval,
-  streamGamehubAiReply,
-} from './aiConnection.js';
 import { GamehubOAuthProvider } from './mcp/oauthProvider.js';
 import { createGamehubTools } from './gamehubTools.js';
 import { requireOwner } from './ownerAuth.js';

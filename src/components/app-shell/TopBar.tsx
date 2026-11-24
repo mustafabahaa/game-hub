@@ -5,7 +5,6 @@ import { AppBar, Toolbar, Box, Typography, IconButton, Menu, MenuItem, Avatar, S
 import { LogoutIcon as LogOut, DarkModeIcon as Moon, LightModeIcon as Sun } from '@/components/AppIcon';
 import { useAppContext } from '@/hooks/useAppContext';
 import { useThemeMode } from '@/hooks/useThemeMode';
-import { GameHubAssistant } from '@/components/GameHubAssistant';
 import { GameHubMcpDialog } from '@/components/GameHubMcpDialog';
 import { areGamehubFunctionsEnabled } from '@/libs/appConfig';
 
@@ -56,7 +55,6 @@ export function TopBar() {
           </Stack>
 
           <Stack direction="row" spacing={{ xs: 0.25, sm: 0.5 }} alignItems="center" sx={{ flexShrink: 0 }}>
-            {areGamehubFunctionsEnabled && <GameHubAssistant />}
             {areGamehubFunctionsEnabled && <GameHubMcpDialog />}
             <Tooltip title={`Switch to ${theme.palette.mode === 'dark' ? 'light' : 'dark'} mode`} disableFocusListener>
               <IconButton
