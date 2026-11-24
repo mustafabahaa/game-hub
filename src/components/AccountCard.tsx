@@ -37,12 +37,12 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
   return (
     <Card sx={{ position: 'relative', minWidth: 0 }}>
       <UiLink component={Link} to={`/accounts/${account.id}`} aria-label={`Open ${account.accountName}`} underline="none"
-        sx={{ display: 'block', mx: 1, mt: 1 }}>
-        <GameCover game={heroGame} platform={account.platform} />
+        sx={{ display: 'block' }}>
+        <GameCover game={heroGame} platform={account.platform} flush />
       </UiLink>
       {onDelete && <IconButton variant="overlayAction" aria-label={`Actions for ${account.accountName}`}
         aria-haspopup="menu" aria-expanded={Boolean(menuAnchor)} onClick={(event) => setMenuAnchor(event.currentTarget)}
-        sx={{ top: 56, right: 16 }}>
+        sx={{ top: 8, right: 10 }}>
         <MoreVertical size={17} />
       </IconButton>}
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, '&:last-child': { pb: 1.5 } }}>
@@ -130,7 +130,7 @@ export function AccountCard({ account, onDelete }: AccountCardProps) {
 export function AccountCardSkeleton() {
   return (
     <Card aria-hidden="true">
-      <Paper elevation={0} variant="mediaHero" sx={{ aspectRatio: '5 / 8', mx: 1, mt: 1, width: 'auto' }}>
+      <Paper elevation={0} variant="mediaHero" sx={{ aspectRatio: '5 / 8' }}>
         <Skeleton variant="mediaCover" animation="wave" />
       </Paper>
       <CardContent sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 1.5, '&:last-child': { pb: 1.5 } }}>

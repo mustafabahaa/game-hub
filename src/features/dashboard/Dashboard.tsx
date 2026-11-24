@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type ReactElement } from 'react';
-import { Stack, Box, Typography, TextField, InputAdornment, Chip, Button, Paper, PageHeader, Menu, MenuItem, useMediaQuery, useTheme } from '@monochrome-ui/design-system';
-import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2, MonitorIcon as Monitor, PlayStationIcon, XboxIcon, SortIcon } from '@/components/AppIcon';
+import { Stack, Box, Typography, TextField, InputAdornment, Button, Paper, PageHeader, Menu, MenuItem, useMediaQuery, useTheme } from '@monochrome-ui/design-system';
+import { AddIcon as Plus, SearchIcon as Search, GamepadIcon as Gamepad2, MonitorIcon as Monitor, PlayStationIcon, XboxIcon, SortIcon, TuneIcon, ChevronDownIcon } from '@/components/AppIcon';
 import { useSearchParams } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
-import { useAccounts, useDeleteAccount } from '@/hooks/useGamehub';
+import { useAccounts, useDeleteAccount, useProviders } from '@/hooks/useGamehub';
 import { AccountCard, AccountCardSkeleton } from '@/components/AccountCard';
 import { AccountModal } from '@/components/AccountModal';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
@@ -11,6 +11,7 @@ import type { Account, Platform } from '@/domain/types';
 import { getAccountInfoFields } from '@/domain/accountInfo';
 
 const PLATFORMS: Platform[] = ['PlayStation', 'Xbox', 'PC'];
+const PLATFORM_ICONS = { PlayStation: PlayStationIcon, Xbox: XboxIcon, PC: Monitor };
 const SKELETON_KEYS = [0, 1, 2, 3, 4, 5];
 const CARD_GAP = 12;
 const PLATFORM_STORAGE_KEY = 'gamehub.vault.platform';
@@ -36,12 +37,16 @@ export function Dashboard() {
   const { user } = useAppContext();
   const uid = user?.uid;
   const { data: accounts, isLoading } = useAccounts(uid);
+  const { data: providers } = useProviders(uid);
   const deleteAccount = useDeleteAccount(uid ?? '');
 
   const [search, setSearch] = useState('');
   const [platform, setPlatform] = useState<Platform>(getSavedPlatform);
+  const [platformAnchor, setPlatformAnchor] = useState<HTMLElement | null>(null);
   const [sort, setSort] = useState<SortOption>('recent');
   const [sortAnchor, setSortAnchor] = useState<HTMLElement | null>(null);
+  const [storeAnchor, setStoreAnchor] = useState<HTMLElement | null>(null);
+  const [storeFilter, setStoreFilter] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [toDelete, setToDelete] = useState<Account | undefined>();
 
@@ -65,6 +70,10 @@ export function Dashboard() {
   const filtered = useMemo(() => {
     let list = accounts ?? [];
     list = list.filter((a) => a.platform === platform);
+    if (storeFilter) {
+      list = list.filter((account) => account.providerId === storeFilter
+        || (account.games ?? []).some((game) => game.providerId === storeFilter));
+    }
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter((a) => a.accountName.toLowerCase().includes(q)
@@ -76,8 +85,16 @@ export function Dashboard() {
       return sort === 'name-asc' ? order : -order;
     });
     return list;
-  }, [accounts, platform, search, sort]);
+  }, [accounts, platform, search, sort, storeFilter]);
   const sortLabel = sort === 'recent' ? 'Recently added' : sort === 'name-asc' ? 'Name A–Z' : 'Name Z–A';
+  const usedProviderIds = new Set((accounts ?? []).flatMap((account) => [
+    ...(account.providerId ? [account.providerId] : []),
+    ...(account.games ?? []).flatMap((game) => game.providerId ? [game.providerId] : []),
+  ]));
+  const storeOptions = (providers ?? []).filter((provider) => usedProviderIds.has(provider.id))
+    .sort((a, b) => a.name.localeCompare(b.name));
+  const selectedStore = storeOptions.find((provider) => provider.id === storeFilter);
+  const PlatformIcon = PLATFORM_ICONS[platform];
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -89,31 +106,53 @@ export function Dashboard() {
           action={<Button size="small" variant="contained" startIcon={<Plus size={16} />} onClick={() => setModalOpen(true)}>Add Account</Button>}
         />
 
-        {/* Search and platform filters */}
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-          <Box sx={{ width: '100%', maxWidth: 360 }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 320px' }, minWidth: 0 }}>
             <TextField
               fullWidth size="small" value={search} onChange={(e) => setSearch(e.target.value)}
               placeholder="Search accounts, emails, or games…"
-              slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
+              slotProps={{
+                htmlInput: { 'aria-label': 'Search accounts, emails, or games' },
+                input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> },
+              }}
             />
           </Box>
-          <Stack direction="row" spacing={1} alignItems="center" sx={{ ml: { sm: 'auto' } }}>
-            {PLATFORMS.map((p) => (
-              <Chip
-                key={p}
-                label={p === 'PlayStation' ? <PlayStationIcon size={20} /> : p === 'Xbox' ? <XboxIcon size={20} /> : <Monitor size={20} />}
-                title={p}
-                aria-label={p}
-                size="small"
-                onClick={() => setPlatform(p)}
-                variant={platform === p ? 'filterSelected' : 'filter'}
-              />
-            ))}
-            <Chip size="small" icon={<SortIcon size={16} />} label={sortLabel} title="Sort accounts"
-              aria-label={`Sort accounts, ${sortLabel}`} onClick={(event) => setSortAnchor(event.currentTarget)} variant="filter" />
+          <Stack role="group" aria-label="Vault filters" direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+            <Button size="small" variant="adornmentAction" startIcon={<PlatformIcon size={16} />} endIcon={<ChevronDownIcon size={12} />}
+              aria-label={`Platform, ${platform}`} aria-haspopup="menu" aria-expanded={Boolean(platformAnchor)}
+              onClick={(event) => setPlatformAnchor(event.currentTarget)}>
+              {platform}
+            </Button>
+            <Button size="small" variant="adornmentAction" startIcon={<TuneIcon size={16} />} endIcon={<ChevronDownIcon size={12} />}
+              aria-label={`Filter by store, ${selectedStore?.name ?? 'All stores'}`} aria-haspopup="menu"
+              aria-expanded={Boolean(storeAnchor)} onClick={(event) => setStoreAnchor(event.currentTarget)}>
+              {selectedStore?.name ?? 'All stores'}
+            </Button>
+            <Button size="small" variant="adornmentAction" startIcon={<SortIcon size={16} />} endIcon={<ChevronDownIcon size={12} />}
+              aria-label={`Sort accounts, ${sortLabel}`} aria-haspopup="menu" aria-expanded={Boolean(sortAnchor)}
+              onClick={(event) => setSortAnchor(event.currentTarget)}>
+              {sortLabel}
+            </Button>
           </Stack>
         </Stack>
+
+        <Menu anchorEl={platformAnchor} open={Boolean(platformAnchor)} onClose={() => setPlatformAnchor(null)}
+          slotProps={{ list: { 'aria-label': 'Platform' } }}>
+          {PLATFORMS.map((option) => (
+            <MenuItem key={option} selected={platform === option} onClick={() => { setPlatform(option); setPlatformAnchor(null); }}>
+              {option}
+            </MenuItem>
+          ))}
+        </Menu>
+
+        <Menu anchorEl={storeAnchor} open={Boolean(storeAnchor)} onClose={() => setStoreAnchor(null)} aria-label="Filter accounts by store">
+          <MenuItem selected={!storeFilter} onClick={() => { setStoreFilter(null); setStoreAnchor(null); }}>All stores</MenuItem>
+          {storeOptions.map((provider) => (
+            <MenuItem key={provider.id} selected={storeFilter === provider.id} onClick={() => { setStoreFilter(provider.id); setStoreAnchor(null); }}>
+              {provider.name}
+            </MenuItem>
+          ))}
+        </Menu>
 
         <Menu anchorEl={sortAnchor} open={Boolean(sortAnchor)} onClose={() => setSortAnchor(null)}>
           <MenuItem selected={sort === 'recent'} onClick={() => { setSort('recent'); setSortAnchor(null); }}>Recently added</MenuItem>
@@ -128,7 +167,18 @@ export function Dashboard() {
         )}
 
         {/* Empty */}
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && filtered.length === 0 && (accounts?.length ?? 0) > 0 && (
+          <Paper variant="emptyState">
+            <Paper variant="emptyStateIcon"><Gamepad2 size={32} /></Paper>
+            <Typography variant="emptyStateTitle" sx={{ mb: 1 }}>No matching accounts</Typography>
+            <Typography variant="emptyStateDescription" sx={{ mb: 3, maxWidth: 380, mx: 'auto' }}>
+              Try another search or store filter.
+            </Typography>
+            {storeFilter && <Button variant="outlined" onClick={() => setStoreFilter(null)}>Show all stores</Button>}
+          </Paper>
+        )}
+
+        {!isLoading && filtered.length === 0 && (accounts?.length ?? 0) === 0 && (
           <Paper variant="emptyState">
             <Paper variant="emptyStateIcon"><Gamepad2 size={32} /></Paper>
             <Typography variant="emptyStateTitle" sx={{ mb: 1 }}>Your vault is empty</Typography>

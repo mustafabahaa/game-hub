@@ -10,33 +10,34 @@ const cases = {
   PC: { label: 'PC', shine: '#68707c', shell: '#424853', rim: '#23272e', strip: '#30353e' },
 };
 
-export function GameCover({ game, platform }: { game?: Game; platform: Platform }) {
+export function GameCover({ game, platform, flush = false }: { game?: Game; platform: Platform; flush?: boolean }) {
   const gradient = useId();
   const [failedUrl, setFailedUrl] = useState<string>();
   const frame = cases[platform === 'PlayStation' ? game?.coverConsole ?? platform : platform];
   const url = game?.imageUrl;
 
   return (
-    <Box sx={{ position: 'relative', pt: 1, px: 0.75, pb: 1.25, isolation: 'isolate' }}>
-      {/* The case is vector artwork. The poster and platform wordmark are separate layers. */}
-      <Box component="svg" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"
-        sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: -1 }}>
-        <defs>
-          <linearGradient id={gradient} x1="0" x2="1" y1="0" y2="0" gradientUnits="objectBoundingBox">
-            <stop stopColor={frame.rim} />
-            <stop offset=".015" stopColor={frame.shine} />
-            <stop offset=".035" stopColor={frame.shell} />
-            <stop offset=".95" stopColor={frame.shell} />
-            <stop offset=".983" stopColor={frame.shine} />
-            <stop offset="1" stopColor={frame.rim} />
-          </linearGradient>
-        </defs>
-        <rect width="100" height="100" rx="4.5" ry="3" fill={frame.rim} />
-        <rect x=".4" y=".25" width="99.2" height="99.25" rx="4.2" ry="2.85" fill={`url(#${gradient})`} />
-        <path d="M5 1H95M5 98.5H95" stroke="white" strokeOpacity=".45" strokeWidth="1" vectorEffect="non-scaling-stroke" />
-        <path d="M16 1.65H84M10 98H90" stroke={frame.rim} strokeWidth="1" vectorEffect="non-scaling-stroke" />
-      </Box>
-      <Stack direction="row" alignItems="center" sx={{ position: 'relative', minHeight: 38, px: 1, isolation: 'isolate' }}>
+    <Box sx={{ position: 'relative', pt: flush ? 0 : 1, px: flush ? 0 : 0.75, pb: flush ? 0 : 1.25, isolation: 'isolate' }}>
+      {!flush && (
+        <Box component="svg" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"
+          sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: -1 }}>
+          <defs>
+            <linearGradient id={gradient} x1="0" x2="1" y1="0" y2="0" gradientUnits="objectBoundingBox">
+              <stop stopColor={frame.rim} />
+              <stop offset=".015" stopColor={frame.shine} />
+              <stop offset=".035" stopColor={frame.shell} />
+              <stop offset=".95" stopColor={frame.shell} />
+              <stop offset=".983" stopColor={frame.shine} />
+              <stop offset="1" stopColor={frame.rim} />
+            </linearGradient>
+          </defs>
+          <rect width="100" height="100" rx="4.5" ry="3" fill={frame.rim} />
+          <rect x=".4" y=".25" width="99.2" height="99.25" rx="4.2" ry="2.85" fill={`url(#${gradient})`} />
+          <path d="M5 1H95M5 98.5H95" stroke="white" strokeOpacity=".45" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          <path d="M16 1.65H84M10 98H90" stroke={frame.rim} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+        </Box>
+      )}
+      <Stack direction="row" alignItems="center" sx={{ position: 'relative', minHeight: flush ? 50 : 38, pl: flush ? 1.5 : 1, pr: flush ? 6 : 1, isolation: 'isolate' }}>
         <Box component="svg" aria-hidden="true" viewBox="0 0 100 34" preserveAspectRatio="none"
           sx={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: -1 }}>
           <rect width="100" height="34" fill={frame.strip} />
@@ -49,7 +50,7 @@ export function GameCover({ game, platform }: { game?: Game; platform: Platform 
       {url && url !== failedUrl ? (
         <Box component="img" src={url} alt={`${game?.title} cover`}
           loading="lazy" decoding="async" onError={() => setFailedUrl(url)}
-          sx={{ display: 'block', width: '100%', aspectRatio: '2 / 3', objectFit: 'contain' }} />
+          sx={{ display: 'block', width: '100%', aspectRatio: '2 / 3', objectFit: 'cover' }} />
       ) : (
         <Paper variant="mediaSurface" elevation={0} sx={{ width: '100%', aspectRatio: '2 / 3', display: 'grid', placeItems: 'center' }}>
           <Typography variant="caption" color="text.secondary">No cover</Typography>

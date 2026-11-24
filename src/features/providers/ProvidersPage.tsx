@@ -1,15 +1,15 @@
-import { useMemo, useState } from 'react';
+import { useId, useMemo, useState, type ReactElement } from 'react';
 import {
   Box, Typography, TextField, InputAdornment, Button, Stack, Avatar, Divider, CardActionArea,
-  Pagination, Skeleton, PageHeader, Chip, IconButton, Tooltip,
+  Pagination, Skeleton, PageHeader, IconButton, Tooltip, Collapse, Menu, MenuItem, Paper, useMediaQuery, useTheme,
 } from '@monochrome-ui/design-system';
-import { SearchIcon as Search, AddIcon as Plus, GamepadIcon as Gamepad2, GlobeIcon, WhatsAppIcon, MessengerIcon, InstagramIcon, FacebookIcon } from '@/components/AppIcon';
-import { useNavigate } from 'react-router-dom';
+import { SearchIcon as Search, AddIcon as Plus, GamepadIcon as Gamepad2, GlobeIcon, WhatsAppIcon, MessengerIcon, InstagramIcon, FacebookIcon, ChevronDownIcon, TuneIcon } from '@/components/AppIcon';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAppContext } from '@/hooks/useAppContext';
-import { useProviders } from '@/hooks/useGamehub';
+import { useAccounts, useProviders } from '@/hooks/useGamehub';
 import { ProviderModal } from '@/components/ProviderModal';
 import { EmptyState } from '@/components/EmptyState';
-import type { Provider } from '@/domain/types';
+import type { Game, Provider } from '@/domain/types';
 import { getProviderContactHref, type ProviderContactChannel } from '@/libs/providerLinks';
 
 const PAGE_SIZE = 12;
@@ -22,23 +22,52 @@ const CONTACT_CHANNELS: { channel: ProviderContactChannel; label: string }[] = [
   { channel: 'website', label: 'Website' },
 ];
 
+type ProviderGame = Pick<Game, 'id' | 'title' | 'imageUrl'> & { accountId: string };
+
 export function ProvidersPage() {
   const navigate = useNavigate();
   const { user } = useAppContext();
   const { data: providers, isLoading } = useProviders(user?.uid);
+  const { data: accounts } = useAccounts(user?.uid);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [channelFilter, setChannelFilter] = useState<ProviderContactChannel | 'all'>('all');
+  const [withGamesOnly, setWithGamesOnly] = useState(false);
+  const [filterAnchor, setFilterAnchor] = useState<{ element: HTMLElement; kind: 'contact' | 'games' } | null>(null);
+  const [expandedProvider, setExpandedProvider] = useState<string>();
   const [modalOpen, setModalOpen] = useState(false);
   const [editProvider, setEditProvider] = useState<Provider | undefined>();
 
+  const gamesByProvider = useMemo(() => {
+    const grouped = new Map<string, ProviderGame[]>();
+    for (const account of accounts ?? []) {
+      for (const game of account.games ?? []) {
+        const providerId = game.providerId || account.providerId;
+        if (!providerId) continue;
+        const entry = { id: game.id, title: game.title, imageUrl: game.imageUrl, accountId: account.id };
+        const games = grouped.get(providerId);
+        if (games) games.push(entry);
+        else grouped.set(providerId, [entry]);
+      }
+    }
+    return grouped;
+  }, [accounts]);
   const filtered = useMemo(() => {
     const list = providers ?? [];
     const q = search.trim().toLowerCase();
-    return list.filter((provider) => (!q || provider.name.toLowerCase().includes(q)) && (channelFilter === 'all' || getProviderContactHref(provider, channelFilter) !== null));
-  }, [providers, search, channelFilter]);
+    return list.filter((provider) => (!q || provider.name.toLowerCase().includes(q))
+      && (channelFilter === 'all' || getProviderContactHref(provider, channelFilter) !== null)
+      && (!withGamesOnly || gamesByProvider.has(provider.id)));
+  }, [providers, search, channelFilter, withGamesOnly, gamesByProvider]);
   const pageCount = Math.ceil(filtered.length / PAGE_SIZE);
   const visibleProviders = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const contactLabel = CONTACT_CHANNELS.find(({ channel }) => channel === channelFilter)?.label ?? 'Any contact';
+  const gamesLabel = withGamesOnly ? 'With my games' : 'All providers';
+  const closeFilters = () => setFilterAnchor(null);
+  const applyFilter = () => {
+    setPage(1);
+    closeFilters();
+  };
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -48,26 +77,49 @@ export function ProvidersPage() {
         action={<Button variant="contained" startIcon={<Plus size={16} />} onClick={() => { setEditProvider(undefined); setModalOpen(true); }}>Add Provider</Button>}
       />
 
-      <Stack direction={{ xs: 'column', md: 'row' }} alignItems={{ xs: 'stretch', md: 'center' }} gap={1.5} sx={{ mt: { xs: 2, md: 3 }, mb: 2.5 }}>
-      <TextField
-        value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-        placeholder="Search providers…"
-        sx={{ width: { xs: '100%', md: 360 }, flexShrink: 0 }}
-        slotProps={{ input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> } }}
-      />
-      <Stack direction="row" gap={0.75} useFlexGap flexWrap="wrap" role="group" aria-label="Filter providers by contact method">
-        <Chip label="All" onClick={() => { setChannelFilter('all'); setPage(1); }} variant={channelFilter === 'all' ? 'filterSelected' : 'filter'} />
+      <Stack direction="row" spacing={1.5} alignItems="center" flexWrap="wrap" useFlexGap sx={{ mt: { xs: 2, md: 3 }, mb: 2.5 }}>
+        <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 320px' }, minWidth: 0 }}>
+          <TextField
+            fullWidth size="small" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Search providers…"
+            slotProps={{
+              htmlInput: { 'aria-label': 'Search providers' },
+              input: { startAdornment: <InputAdornment position="start"><Search size={18} color="action" /></InputAdornment> },
+            }}
+          />
+        </Box>
+        <Stack role="group" aria-label="Provider filters" direction="row" spacing={0.5} alignItems="center" flexWrap="wrap" useFlexGap>
+          <Button size="small" variant="adornmentAction" startIcon={<TuneIcon size={16} />} endIcon={<ChevronDownIcon size={12} />}
+            aria-haspopup="menu" aria-expanded={filterAnchor?.kind === 'contact'} aria-label={`Contact method, ${contactLabel}`}
+            onClick={(event) => setFilterAnchor({ element: event.currentTarget, kind: 'contact' })}>
+            {contactLabel}
+          </Button>
+          <Button size="small" variant="adornmentAction" startIcon={<Gamepad2 size={16} />} endIcon={<ChevronDownIcon size={12} />}
+            aria-haspopup="menu" aria-expanded={filterAnchor?.kind === 'games'} aria-label={`Game ownership, ${gamesLabel}`}
+            onClick={(event) => setFilterAnchor({ element: event.currentTarget, kind: 'games' })}>
+            {gamesLabel}
+          </Button>
+        </Stack>
+      </Stack>
+
+      <Menu anchorEl={filterAnchor?.element} open={filterAnchor?.kind === 'contact'} onClose={closeFilters}
+        slotProps={{ list: { 'aria-label': 'Contact method' } }}>
+        <MenuItem selected={channelFilter === 'all'} onClick={() => { setChannelFilter('all'); applyFilter(); }}>Any contact</MenuItem>
         {CONTACT_CHANNELS.filter(({ channel }) => providers?.some((provider) => getProviderContactHref(provider, channel))).map(({ channel, label }) => (
-          <Chip key={channel} label={label} onClick={() => { setChannelFilter(channel); setPage(1); }} variant={channelFilter === channel ? 'filterSelected' : 'filter'} />
+          <MenuItem key={channel} selected={channelFilter === channel} onClick={() => { setChannelFilter(channel); applyFilter(); }}>{label}</MenuItem>
         ))}
-      </Stack>
-      </Stack>
+      </Menu>
+      <Menu anchorEl={filterAnchor?.element} open={filterAnchor?.kind === 'games'} onClose={closeFilters}
+        slotProps={{ list: { 'aria-label': 'Game ownership' } }}>
+        <MenuItem selected={!withGamesOnly} onClick={() => { setWithGamesOnly(false); applyFilter(); }}>All providers</MenuItem>
+        <MenuItem selected={withGamesOnly} onClick={() => { setWithGamesOnly(true); applyFilter(); }}>With my games</MenuItem>
+      </Menu>
 
       {isLoading && <ProviderGrid>{SKELETON_KEYS.map((i) => <ProviderRowSkeleton key={i} />)}</ProviderGrid>}
 
       {!isLoading && filtered.length === 0 && (
         providers?.length ? (
-          <EmptyState icon={<Search size={21} />} title="No matching providers" description="Try a different search or contact filter." sx={{ py: 3 }} />
+          <EmptyState icon={<Search size={21} />} title="No matching providers" description="Try a different search or filter." sx={{ py: 3 }} />
         ) : (
           <EmptyState
             icon={<Gamepad2 size={21} />}
@@ -82,7 +134,10 @@ export function ProvidersPage() {
       {!isLoading && filtered.length > 0 && <>
         <ProviderGrid>
         {visibleProviders.map((p) => (
-          <ProviderRow key={p.id} provider={p} onView={() => navigate(`/providers/${p.id}`)} />
+          <ProviderRow key={p.id} provider={p} games={gamesByProvider.get(p.id) ?? []}
+            expanded={expandedProvider === p.id}
+            onToggleGames={() => setExpandedProvider(expandedProvider === p.id ? undefined : p.id)}
+            onView={() => navigate(`/providers/${p.id}`)} />
         ))}
         </ProviderGrid>
         {pageCount > 1 && <Stack direction={{ xs: 'column', sm: 'row' }} alignItems="center" justifyContent="space-between" gap={1.5} sx={{ mt: 3 }}>
@@ -96,16 +151,31 @@ export function ProvidersPage() {
   );
 }
 
-function ProviderGrid({ children }: { children: React.ReactNode }) {
-  return <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, minmax(0, 1fr))' }, gap: { xs: 1.5, sm: 2 } }}>{children}</Box>;
+function ProviderGrid({ children }: { children: ReactElement[] }) {
+  const { breakpoints } = useTheme();
+  const columns = useMediaQuery(breakpoints.up('md')) ? 2 : 1;
+  const providersByColumn = Array.from({ length: columns }, () => [] as ReactElement[]);
+  children.forEach((row, index) => providersByColumn[index % columns].push(row));
+
+  return (
+    <Box sx={{ display: 'grid', gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`, alignItems: 'start', gap: 2 }}>
+      {providersByColumn.map((rows, index) => (
+        <Stack key={index} spacing={1.5}>{rows}</Stack>
+      ))}
+    </Box>
+  );
 }
 
 interface ProviderCardProps {
   provider: Provider;
+  games: ProviderGame[];
+  expanded: boolean;
+  onToggleGames: () => void;
   onView: () => void;
 }
 
-function ProviderRow({ provider, onView }: ProviderCardProps) {
+function ProviderRow({ provider, games, expanded, onToggleGames, onView }: ProviderCardProps) {
+  const gamesId = useId();
   const contactItems = CONTACT_CHANNELS.flatMap(({ channel, label }) => {
     const href = getProviderContactHref(provider, channel);
     if (!href) return [];
@@ -121,20 +191,50 @@ function ProviderRow({ provider, onView }: ProviderCardProps) {
           variant="mediaFallbackCompact"
           sx={{ width: 48, height: 48, flex: '0 0 auto' }}
         >{provider.name[0]?.toUpperCase()}</Avatar>
-        <CardActionArea onClick={onView} sx={{ minWidth: 0, flex: 1, textAlign: 'left' }}>
-          <Stack>
+        <Stack justifyContent="center" alignItems="flex-start" sx={{ minWidth: 0, minHeight: 56, flex: 1 }}>
+          <CardActionArea onClick={onView} sx={{ minWidth: 0, textAlign: 'left' }}>
             <Typography variant="itemTitle" noWrap>{provider.name}</Typography>
-            <Typography variant="body2" color="text.secondary" noWrap>{contactItems.length ? `${contactItems.length} contact options` : 'No contact details'}</Typography>
-          </Stack>
-        </CardActionArea>
+            {games.length === 0 && <Typography variant="body2" color="text.secondary" noWrap>
+              {contactItems.length ? `${contactItems.length} contact options` : 'No contact details'}
+            </Typography>}
+          </CardActionArea>
+          {games.length > 0 && <Button size="small" variant="adornmentAction"
+            endIcon={<ChevronDownIcon size={12} style={{ transform: expanded ? 'rotate(180deg)' : undefined }} />}
+            aria-expanded={expanded} aria-controls={gamesId} aria-label={`My games at ${provider.name}, ${games.length}`}
+            onClick={onToggleGames} sx={{ px: 0.25 }}>
+            {games.length} {games.length === 1 ? 'game' : 'games'}
+          </Button>}
+        </Stack>
         {contactItems.length > 0 && <Stack direction="row" gap={0.5} sx={{ flexShrink: 0 }}>
           {contactItems.map(({ channel, label, href, Icon }) => <Tooltip key={channel} title={label}>
-            <IconButton component="a" href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label} for ${provider.name}`} size="small" variant="quietAction" sx={{ width: 36, height: 36 }} onClick={(event) => event.stopPropagation()}>
-              <Icon size={21} />
+            <IconButton component="a" href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label} for ${provider.name}`}
+              size="small" color="inherit" variant="utilityAction" sx={{ width: { xs: 30, sm: 34 }, height: { xs: 30, sm: 34 }, p: 0 }}>
+              <Icon size={17} variant="Bold" />
             </IconButton>
           </Tooltip>)}
         </Stack>}
       </Stack>
+      {games.length > 0 && (
+        <Collapse id={gamesId} in={expanded} mountOnEnter>
+          <Stack component="ul" spacing={0.5} aria-label={`My games at ${provider.name}`} sx={{ m: 0, p: 0, pl: 7.5, pb: 1.5 }}>
+            {games.map((game) => (
+              <Box key={`${game.accountId}/${game.id}`} component="li" sx={{ display: 'block' }}>
+                <CardActionArea component={Link} to={`/accounts/${game.accountId}`} sx={{ p: 0.75 }}>
+                  <Stack direction="row" alignItems="center" spacing={1.25}>
+                    {game.imageUrl
+                      ? <Paper component="img" variant="mediaThumbnail" src={game.imageUrl} alt="" loading="lazy"
+                          sx={{ width: 32, height: 44, flexShrink: 0 }} />
+                      : <Paper variant="mediaSurface" sx={{ width: 32, height: 44, flexShrink: 0, display: 'grid', placeItems: 'center' }}>
+                          <Gamepad2 size={16} />
+                        </Paper>}
+                    <Typography variant="itemTitle">{game.title}</Typography>
+                  </Stack>
+                </CardActionArea>
+              </Box>
+            ))}
+          </Stack>
+        </Collapse>
+      )}
       <Divider />
     </Box>
   );
@@ -142,7 +242,7 @@ function ProviderRow({ provider, onView }: ProviderCardProps) {
 
 function ProviderRowSkeleton() {
   return (
-    <Stack direction="row" alignItems="center" gap={1.5} sx={{ py: 1.5 }} aria-hidden="true">
+    <Stack direction="row" alignItems="center" gap={1.5} sx={{ minHeight: 80, py: 1.5 }} aria-hidden="true">
       <Skeleton variant="circular" animation="wave" width={48} height={48} />
       <Box sx={{ flex: 1, minWidth: 0 }}>
         <Skeleton variant="text" animation="wave" width="65%" height={28} />
