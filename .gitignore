@@ -25,6 +25,12 @@
 
 # firebase
 .firebase/
+firebase-debug*.log
+firestore-debug*.log
+database-debug*.log
+pubsub-debug*.log
+storage-debug*.log
+ui-debug*.log
 
 # debug
 npm-debug.log*
